@@ -2,9 +2,12 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:eludris/settings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yaru/yaru.dart';
+// ignore: depend_on_referenced_packages
 import 'package:markdown/markdown.dart' as md;
 import 'package:http/http.dart' show post;
 
@@ -14,14 +17,16 @@ void main() {
 
 class Message {
   late final String author;
+  late bool optimistic;
   late String content;
 
-  Message(this.author, this.content);
+  Message(this.author, this.content, this.optimistic);
 
   Message.fromJson(String json) {
     final Map<String, dynamic> map = jsonDecode(json);
     author = map['author'];
     content = map['content'];
+    optimistic = false;
   }
 }
 
@@ -33,7 +38,10 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return const MaterialApp(
       title: 'Flutter Demo',
-      home: YaruTheme(child: MyHomePage()),
+      home: YaruTheme(
+        data: YaruThemeData(variant: YaruVariant.purple),
+        child: MyHomePage(),
+      ),
     );
   }
 }
@@ -64,6 +72,15 @@ class _MyHomePageState extends State<MyHomePage> {
                 });
               }),
       ),
+      floatingActionButton: name != null
+          ? null
+          : FloatingActionButton(
+              onPressed: () {
+                Navigator.of(context).push(MaterialPageRoute(
+                    builder: (context) => const SettingsRoute()));
+              },
+              child: const Icon(Icons.settings),
+            ),
     );
   }
 }
@@ -126,43 +143,62 @@ class LoggedIn extends StatefulWidget {
 
 class _LoggedInState extends State<LoggedIn> {
   final _messages = <Message>[];
-  StreamSubscription? _steam;
+  StreamSubscription? _stream;
 
   final _textController = TextEditingController();
   final _scrollController = ScrollController();
+
+  String httpUrl = "https://eludris.tooty.xyz";
+  String gatewayUrl = "wss://eludris.tooty.xyz/ws";
 
   @override
   void dispose() {
     // Clean up the controller when the widget is disposed.
     _textController.dispose();
     _scrollController.dispose();
-    _steam?.cancel();
+    _stream?.cancel();
     super.dispose();
   }
 
   _sendMessage() async {
+    final String text = _textController.text;
+    _textController.clear();
+    setState(() {
+      _messages.add(Message(widget.name, text, true));
+    });
     await post(
-      Uri.parse('https://eludris.tooty.xyz/messages'),
+      Uri.parse('$httpUrl/messages'),
       body: jsonEncode({
         'author': widget.name,
-        'content': _textController.text,
+        'content': text,
       }),
       headers: {
         'Content-Type': 'application/json',
       },
     );
-
-    _textController.clear();
   }
 
   _initState() async {
-    final ws = await WebSocket.connect('wss://eludris.tooty.xyz/ws');
+    final prefs = await SharedPreferences.getInstance();
+    httpUrl = prefs.getString('http-url') ?? 'https://eludris.tooty.xyz';
+    gatewayUrl = prefs.getString('gateway-url') ?? 'wss://eludris.tooty.xyz/ws';
+
+    final ws = await WebSocket.connect(gatewayUrl);
     ws.pingInterval = const Duration(seconds: 10);
-    _steam = ws.listen((event) {
+    _stream = ws.listen((event) {
       final message = Message.fromJson(event);
       setState(() {
-        _messages.add(message);
-        // scroll to bottom
+        final result = _messages.cast<Message?>().firstWhere(
+            (element) =>
+                element?.optimistic == true &&
+                element?.content == message.content &&
+                element?.author == message.author,
+            orElse: () => null);
+        if (result != null) {
+          result.optimistic = false;
+        } else {
+          _messages.add(message);
+        }
       });
     });
   }
@@ -170,7 +206,7 @@ class _LoggedInState extends State<LoggedIn> {
   @override
   void initState() {
     super.initState();
-    _initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _initState());
   }
 
   @override
@@ -182,16 +218,21 @@ class _LoggedInState extends State<LoggedIn> {
         curve: Curves.easeOut,
       );
     });
+
     return Column(
       children: [
-        Row(
-          children: [
-            Text('Logged in as ${widget.name}'),
-            ElevatedButton(
-              child: Text('Logout'),
-              onPressed: widget.onLogout,
-            ),
-          ],
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Row(
+            children: [
+              ConnectionStatus(name: widget.name),
+              const Spacer(),
+              ElevatedButton(
+                onPressed: widget.onLogout,
+                child: const Text('Disconnect'),
+              ),
+            ],
+          ),
         ),
         Expanded(
           child: ListView.builder(
@@ -208,15 +249,25 @@ class _LoggedInState extends State<LoggedIn> {
                     children: [
                       Text(
                         message.author,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                      MarkdownBody(
-                          data: message.content,
-                          extensionSet: md.ExtensionSet(
-                              md.ExtensionSet.gitHubFlavored.blockSyntaxes, [
-                            ...md.ExtensionSet.gitHubFlavored.inlineSyntaxes,
-                            md.EmojiSyntax()
-                          ])),
+                      Theme(
+                        data: Theme.of(context).copyWith(
+                          textTheme: Theme.of(context).textTheme.apply(
+                                bodyColor:
+                                    message.optimistic ? Colors.grey : null,
+                              ),
+                        ),
+                        child: MarkdownBody(
+                            data: message.content,
+                            extensionSet: md.ExtensionSet(
+                                md.ExtensionSet.gitHubFlavored.blockSyntaxes, [
+                              ...md.ExtensionSet.gitHubFlavored.inlineSyntaxes,
+                              md.EmojiSyntax()
+                            ])),
+                      ),
                     ],
                   ),
                 ),
@@ -248,5 +299,34 @@ class _LoggedInState extends State<LoggedIn> {
         ),
       ],
     );
+  }
+}
+
+class ConnectionStatus extends StatelessWidget {
+  final String name;
+
+  const ConnectionStatus({Key? key, required this.name}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<SharedPreferences>(
+        future: SharedPreferences.getInstance(),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) return const Icon(Icons.heart_broken);
+          if (!snapshot.hasData) return const Icon(Icons.hourglass_empty);
+
+          final prefs = snapshot.data!;
+
+          final httpUrl =
+              prefs.getString('http-url') ?? 'https://eludris.tooty.xyz';
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Connected as $name'),
+              Text('Using ${Uri.parse(httpUrl).host}')
+            ],
+          );
+        });
   }
 }
