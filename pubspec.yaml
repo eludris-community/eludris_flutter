@@ -37,6 +37,7 @@ dependencies:
   cupertino_icons: ^1.0.2
   http: ^0.13.5
   flutter_markdown: ^0.6.12
+  yaru: ^0.3.3
 
 dev_dependencies:
   flutter_test:
