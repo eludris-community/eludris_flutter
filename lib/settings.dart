@@ -54,6 +54,18 @@ class SettingsRoute extends StatelessWidget {
                       prefs.setString("gateway-url", value);
                     },
                   ),
+                  const SizedBox(height: 8.0),
+                  TextFormField(
+                    initialValue: snapshot.data!.getString("effis-url"),
+                    decoration: const InputDecoration(
+                      labelText: 'Effis URL',
+                      hintText: 'https://effis.tooty.xyz/',
+                    ),
+                    onChanged: (value) async {
+                      final prefs = await SharedPreferences.getInstance();
+                      prefs.setString("effis-url", value);
+                    },
+                  ),
                 ],
               );
             }),

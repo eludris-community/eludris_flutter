@@ -3,13 +3,14 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:eludris/settings.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yaru/yaru.dart';
 // ignore: depend_on_referenced_packages
 import 'package:markdown/markdown.dart' as md;
-import 'package:http/http.dart' show post;
+import 'package:http/http.dart' show post, MultipartRequest, MultipartFile;
 
 void main() {
   runApp(const MyApp());
@@ -149,6 +150,8 @@ class _LoggedInState extends State<LoggedIn> {
   final FocusNode _focusNode = FocusNode();
   final _scrollController = ScrollController();
 
+  bool textEnabled = true;
+  String effisUrl = 'https://eludris.tooty.xyz';
   String httpUrl = "https://eludris.tooty.xyz";
   String gatewayUrl = "wss://eludris.tooty.xyz/ws";
 
@@ -183,6 +186,7 @@ class _LoggedInState extends State<LoggedIn> {
     final prefs = await SharedPreferences.getInstance();
     httpUrl = prefs.getString('http-url') ?? 'https://eludris.tooty.xyz';
     gatewayUrl = prefs.getString('gateway-url') ?? 'wss://eludris.tooty.xyz/ws';
+    effisUrl = prefs.getString('effis-url') ?? 'https://eludris.tooty.xyz';
 
     final ws = await WebSocket.connect(gatewayUrl);
     ws.pingInterval = const Duration(seconds: 10);
@@ -280,10 +284,44 @@ class _LoggedInState extends State<LoggedIn> {
           padding: const EdgeInsets.all(8.0),
           child: Row(
             children: [
+              IconButton(
+                  onPressed: () async {
+                    final files = await FilePicker.platform.pickFiles();
+                    if (files != null) {
+                      setState(() {
+                        textEnabled = false;
+                      });
+                      final file = File(files.files.single.path!);
+
+                      // multipart that takes file
+                      final request = MultipartRequest(
+                          "POST", Uri.parse("$effisUrl/upload"));
+                      request.fields['name'] = file.path.split('/').last;
+                      request.files
+                          .add(await MultipartFile.fromPath('file', file.path));
+
+                      final result = await request.send();
+                      final data =
+                          await jsonDecode(await result.stream.bytesToString());
+
+                      final uri = Uri.parse(effisUrl);
+                      _textController.text += Uri(
+                              host: uri.host,
+                              scheme: uri.scheme,
+                              path: data["id"].toString())
+                          .toString();
+                      setState(() {
+                        textEnabled = true;
+                      });
+                      _focusNode.requestFocus();
+                    }
+                  },
+                  icon: const Icon(Icons.upload)),
               Expanded(
                 child: TextField(
                   autofocus: true,
                   controller: _textController,
+                  enabled: textEnabled,
                   focusNode: _focusNode,
                   onSubmitted: (data) {
                     _sendMessage();
