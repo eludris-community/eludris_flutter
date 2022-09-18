@@ -146,6 +146,7 @@ class _LoggedInState extends State<LoggedIn> {
   StreamSubscription? _stream;
 
   final _textController = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
   final _scrollController = ScrollController();
 
   String httpUrl = "https://eludris.tooty.xyz";
@@ -283,8 +284,10 @@ class _LoggedInState extends State<LoggedIn> {
                 child: TextField(
                   autofocus: true,
                   controller: _textController,
+                  focusNode: _focusNode,
                   onSubmitted: (data) {
                     _sendMessage();
+                    _focusNode.requestFocus();
                   },
                   decoration:
                       const InputDecoration(border: OutlineInputBorder()),
