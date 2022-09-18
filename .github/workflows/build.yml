@@ -11,6 +11,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+
+
       - name: Setup Java
         uses: actions/setup-java@v2
         with:
@@ -19,6 +21,16 @@ jobs:
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
+        with:
+          cache: true
+          cache-key: 'flutter-:os:-:channel:-:version:-:arch:-:hash:'
+          cache-path: '${{ runner.tool_cache }}/flutter/:channel:-:version:-:arch:'
+
+      - name: Cache Flutter Dependencies
+        uses: actions/cache@v2
+        with:
+          path: ${{ runner.tool_cache }}/flutter/.pub-cache
+          key: ${{ runner.os }}-pub-cache
 
       - name: Install Packages
         run: flutter pub get
@@ -29,7 +41,7 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v3.1.0
         with:
-          name: eludris
+          name: eludris-android
           path: ./build/app/outputs/flutter-apk/app-release.apk
   build-windows:
     runs-on: windows-latest
@@ -39,6 +51,16 @@ jobs:
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
+        with:
+          cache: true
+          cache-key: 'flutter-:os:-:channel:-:version:-:arch:-:hash:'
+          cache-path: '${{ runner.tool_cache }}/flutter/:channel:-:version:-:arch:'
+
+      - name: Cache Flutter Dependencies
+        uses: actions/cache@v2
+        with:
+          path: ${{ runner.tool_cache }}/flutter/.pub-cache
+          key: ${{ runner.os }}-pub-cache
 
       - name: Install Packages
         run: flutter pub get
@@ -49,5 +71,5 @@ jobs:
       - name: Upload Windows Files
         uses: actions/upload-artifact@v3.1.0
         with:
-          name: eludris
+          name: eludris-windows
           path: ./build/windows/runner/Release/
