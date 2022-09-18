@@ -11,6 +11,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+
+
       - name: Setup Java
         uses: actions/setup-java@v2
         with:
@@ -19,8 +21,20 @@ jobs:
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
+        with:
+          cache: true
+          cache-key: 'flutter-:os:-:channel:-:version:-:arch:-:hash:'
+          cache-path: '${{ runner.tool_cache }}/flutter/:channel:-:version:-:arch:'
+
+      - name: Cache Flutter Dependencies
+        id: cache-flutter-dependencies
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.PUB_CACHE }}
+          key: ${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}-pub-cache
 
       - name: Install Packages
+        if: steps.cache-flutter-dependencies.outputs.cache-hit != 'true'
         run: flutter pub get
 
       - name: Build APK
@@ -29,7 +43,7 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v3.1.0
         with:
-          name: eludris
+          name: eludris-android
           path: ./build/app/outputs/flutter-apk/app-release.apk
   build-windows:
     runs-on: windows-latest
@@ -39,8 +53,20 @@ jobs:
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
+        with:
+          cache: true
+          cache-key: 'flutter-:os:-:channel:-:version:-:arch:-:hash:'
+          cache-path: '${{ runner.tool_cache }}/flutter/:channel:-:version:-:arch:'
+
+      - name: Cache Flutter Dependencies
+        id: cache-flutter-dependencies
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.PUB_CACHE }}
+          key: ${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}-pub-cache
 
       - name: Install Packages
+        if: steps.cache-flutter-dependencies.outputs.cache-hit != 'true'
         run: flutter pub get
 
       - name: Build Windows Files
@@ -49,5 +75,5 @@ jobs:
       - name: Upload Windows Files
         uses: actions/upload-artifact@v3.1.0
         with:
-          name: eludris
+          name: eludris-windows
           path: ./build/windows/runner/Release/
