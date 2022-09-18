@@ -27,12 +27,14 @@ jobs:
           cache-path: '${{ runner.tool_cache }}/flutter/:channel:-:version:-:arch:'
 
       - name: Cache Flutter Dependencies
+        id: cache-flutter-dependencies
         uses: actions/cache@v2
         with:
           path: ${{ env.PUB_CACHE }}
           key: ${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}-pub-cache
 
       - name: Install Packages
+        if: steps.cache-flutter-dependencies.outputs.cache-hit != 'true'
         run: flutter pub get
 
       - name: Build APK
@@ -57,12 +59,14 @@ jobs:
           cache-path: '${{ runner.tool_cache }}/flutter/:channel:-:version:-:arch:'
 
       - name: Cache Flutter Dependencies
+        id: cache-flutter-dependencies
         uses: actions/cache@v2
         with:
           path: ${{ env.PUB_CACHE }}
           key: ${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}-pub-cache
 
       - name: Install Packages
+        if: steps.cache-flutter-dependencies.outputs.cache-hit != 'true'
         run: flutter pub get
 
       - name: Build Windows Files
