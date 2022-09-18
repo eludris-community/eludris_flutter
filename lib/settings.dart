@@ -47,7 +47,7 @@ class SettingsRoute extends StatelessWidget {
                     initialValue: snapshot.data!.getString("gateway-url"),
                     decoration: const InputDecoration(
                       labelText: 'Gateway URL',
-                      hintText: 'https://eludris.tooty.xyz/messages',
+                      hintText: 'wss://eludris.tooty.xyz/ws',
                     ),
                     onChanged: (value) async {
                       final prefs = await SharedPreferences.getInstance();
