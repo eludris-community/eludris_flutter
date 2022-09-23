@@ -5,13 +5,11 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-ubuntu:
+  build-android:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-
-
 
       - name: Setup Java
         uses: actions/setup-java@v2
@@ -77,3 +75,45 @@ jobs:
         with:
           name: eludris-windows
           path: ./build/windows/runner/Release/
+
+  build-ubuntu:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get install \
+              cmake \
+              clang \
+              ninja-build \
+              libgtk-3-dev \
+              liblzma-dev
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          cache: true
+          cache-key: 'flutter-:os:-:channel:-:version:-:arch:-:hash:'
+          cache-path: '${{ runner.tool_cache }}/flutter/:channel:-:version:-:arch:'
+
+      - name: Cache Flutter Dependencies
+        id: cache-flutter-dependencies
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.PUB_CACHE }}
+          key: ${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}-pub-cache
+
+      - name: Install Packages
+        if: steps.cache-flutter-dependencies.outputs.cache-hit != 'true'
+        run: flutter pub get
+
+      - name: Build Linux Files
+        run: flutter build linux
+
+      - name: Upload Linux Files
+        uses: actions/upload-artifact@v3.1.0
+        with:
+          name: eludris-linux
+          path: ./build/linux/x64/release/bundle/eludris_flutter
