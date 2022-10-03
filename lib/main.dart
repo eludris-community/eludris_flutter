@@ -34,7 +34,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Home(),
+      body: SafeArea(child: Home()),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.of(context).push(
