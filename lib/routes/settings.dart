@@ -1,3 +1,4 @@
+import 'package:eludris/routes/plugins.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yaru/yaru.dart';
@@ -66,6 +67,18 @@ class SettingsRoute extends StatelessWidget {
                       prefs.setString("effis-url", value);
                     },
                   ),
+                  const SizedBox(height: 8.0),
+                  Row(
+                    children: [
+                      ElevatedButton(
+                          onPressed: () {
+                            Navigator.of(context).push(MaterialPageRoute(
+                                builder: (context) => const PluginsRoute()));
+                          },
+                          child: const Text("Plugin Settings")),
+                      const Spacer(),
+                    ],
+                  )
                 ],
               );
             }),

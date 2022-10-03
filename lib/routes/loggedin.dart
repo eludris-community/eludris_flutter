@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:eludris/lua/api.dart';
+import 'package:eludris/lua/common.dart';
 import 'package:eludris/models/gateway/message.dart';
 import 'package:eludris/widgets/message.dart';
 import 'package:file_picker/file_picker.dart';
@@ -99,6 +101,12 @@ class _LoggedInState extends State<LoggedIn> {
     ws.pingInterval = const Duration(seconds: 10);
     _stream = ws.listen((event) {
       final message = MessageData.fromJson(event);
+
+      final api = LuaAPI(API());
+      final ls = prepareLua(api, message);
+
+      // TODO: Run postGotMessage hooks
+
       setState(() {
         final result = _messages.cast<MessageData?>().firstWhere(
             (element) =>

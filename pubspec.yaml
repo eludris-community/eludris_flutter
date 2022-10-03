@@ -40,6 +40,8 @@ dependencies:
   yaru: ^0.3.3
   shared_preferences: ^2.0.15
   file_picker: ^5.1.0
+  lua_dardo: ^0.0.4
+  path_provider: ^2.0.11
 
 dev_dependencies:
   flutter_test:
