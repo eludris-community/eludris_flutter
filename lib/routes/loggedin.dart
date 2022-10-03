@@ -134,91 +134,93 @@ class _LoggedInState extends State<LoggedIn> {
     return YaruTheme(
       data: const YaruThemeData(variant: YaruVariant.purple),
       child: Scaffold(
-        body: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Row(
-                children: [
-                  ConnectionStatus(name: widget.name),
-                  const Spacer(),
-                  ElevatedButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Disconnect'),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: ListView.builder(
-                itemCount: _messages.length,
-                controller: _scrollController,
-                itemBuilder: (context, index) {
-                  final message = _messages[index];
-                  return Message(message: message);
-                },
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Row(
-                children: [
-                  IconButton(
-                      onPressed: () async {
-                        final files = await FilePicker.platform.pickFiles();
-                        if (files != null) {
-                          setState(() {
-                            textEnabled = false;
-                          });
-                          final file = File(files.files.single.path!);
-
-                          final request = MultipartRequest(
-                              "POST", Uri.parse("$effisUrl/upload"));
-                          request.fields['name'] = file.path.split('/').last;
-                          request.files.add(
-                              await MultipartFile.fromPath('file', file.path));
-
-                          final result = await request.send();
-                          final data = await jsonDecode(
-                              await result.stream.bytesToString());
-
-                          final uri = Uri.parse(effisUrl);
-                          _textController.text += Uri(
-                            host: uri.host,
-                            scheme: uri.scheme,
-                            path: data["id"].toString(),
-                          ).toString();
-
-                          setState(() {
-                            textEnabled = true;
-                          });
-
-                          _focusNode.requestFocus();
-                        }
-                      },
-                      icon: const Icon(Icons.upload)),
-                  Expanded(
-                    child: TextField(
-                      autofocus: true,
-                      controller: _textController,
-                      enabled: textEnabled,
-                      focusNode: _focusNode,
-                      onSubmitted: (data) {
-                        _sendMessage();
-                        _focusNode.requestFocus();
-                      },
-                      decoration:
-                          const InputDecoration(border: OutlineInputBorder()),
+        body: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Row(
+                  children: [
+                    ConnectionStatus(name: widget.name),
+                    const Spacer(),
+                    ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Disconnect'),
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.send),
-                    onPressed: _sendMessage,
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+              Expanded(
+                child: ListView.builder(
+                  itemCount: _messages.length,
+                  controller: _scrollController,
+                  itemBuilder: (context, index) {
+                    final message = _messages[index];
+                    return Message(message: message);
+                  },
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Row(
+                  children: [
+                    IconButton(
+                        onPressed: () async {
+                          final files = await FilePicker.platform.pickFiles();
+                          if (files != null) {
+                            setState(() {
+                              textEnabled = false;
+                            });
+                            final file = File(files.files.single.path!);
+
+                            final request = MultipartRequest(
+                                "POST", Uri.parse("$effisUrl/upload"));
+                            request.fields['name'] = file.path.split('/').last;
+                            request.files.add(await MultipartFile.fromPath(
+                                'file', file.path));
+
+                            final result = await request.send();
+                            final data = await jsonDecode(
+                                await result.stream.bytesToString());
+
+                            final uri = Uri.parse(effisUrl);
+                            _textController.text += Uri(
+                              host: uri.host,
+                              scheme: uri.scheme,
+                              path: data["id"].toString(),
+                            ).toString();
+
+                            setState(() {
+                              textEnabled = true;
+                            });
+
+                            _focusNode.requestFocus();
+                          }
+                        },
+                        icon: const Icon(Icons.upload)),
+                    Expanded(
+                      child: TextField(
+                        autofocus: true,
+                        controller: _textController,
+                        enabled: textEnabled,
+                        focusNode: _focusNode,
+                        onSubmitted: (data) {
+                          _sendMessage();
+                          _focusNode.requestFocus();
+                        },
+                        decoration:
+                            const InputDecoration(border: OutlineInputBorder()),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.send),
+                      onPressed: _sendMessage,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

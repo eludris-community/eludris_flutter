@@ -16,58 +16,60 @@ class SettingsRoute extends StatelessWidget {
           },
           child: const Icon(Icons.save),
         ),
-        body: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: FutureBuilder<SharedPreferences>(future: Future(() async {
-            return await SharedPreferences.getInstance();
-          }), builder: (context, snapshot) {
-            if (snapshot.hasError) {
-              return const Icon(Icons.heart_broken);
-            }
-            if (!snapshot.hasData) {
-              return const Icon(Icons.hourglass_empty);
-            }
-            return Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                TextFormField(
-                  initialValue: snapshot.data!.getString("http-url"),
-                  decoration: const InputDecoration(
-                    labelText: 'HTTP URL',
-                    hintText: 'https://eludris.tooty.xyz/',
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: FutureBuilder<SharedPreferences>(future: Future(() async {
+              return await SharedPreferences.getInstance();
+            }), builder: (context, snapshot) {
+              if (snapshot.hasError) {
+                return const Icon(Icons.heart_broken);
+              }
+              if (!snapshot.hasData) {
+                return const Icon(Icons.hourglass_empty);
+              }
+              return Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  TextFormField(
+                    initialValue: snapshot.data!.getString("http-url"),
+                    decoration: const InputDecoration(
+                      labelText: 'HTTP URL',
+                      hintText: 'https://eludris.tooty.xyz/',
+                    ),
+                    onChanged: (value) async {
+                      final prefs = await SharedPreferences.getInstance();
+                      prefs.setString("http-url", value);
+                    },
                   ),
-                  onChanged: (value) async {
-                    final prefs = await SharedPreferences.getInstance();
-                    prefs.setString("http-url", value);
-                  },
-                ),
-                const SizedBox(height: 8.0),
-                TextFormField(
-                  initialValue: snapshot.data!.getString("gateway-url"),
-                  decoration: const InputDecoration(
-                    labelText: 'Gateway URL',
-                    hintText: 'wss://eludris.tooty.xyz/ws',
+                  const SizedBox(height: 8.0),
+                  TextFormField(
+                    initialValue: snapshot.data!.getString("gateway-url"),
+                    decoration: const InputDecoration(
+                      labelText: 'Gateway URL',
+                      hintText: 'wss://eludris.tooty.xyz/ws',
+                    ),
+                    onChanged: (value) async {
+                      final prefs = await SharedPreferences.getInstance();
+                      prefs.setString("gateway-url", value);
+                    },
                   ),
-                  onChanged: (value) async {
-                    final prefs = await SharedPreferences.getInstance();
-                    prefs.setString("gateway-url", value);
-                  },
-                ),
-                const SizedBox(height: 8.0),
-                TextFormField(
-                  initialValue: snapshot.data!.getString("effis-url"),
-                  decoration: const InputDecoration(
-                    labelText: 'Effis URL',
-                    hintText: 'https://effis.tooty.xyz/',
+                  const SizedBox(height: 8.0),
+                  TextFormField(
+                    initialValue: snapshot.data!.getString("effis-url"),
+                    decoration: const InputDecoration(
+                      labelText: 'Effis URL',
+                      hintText: 'https://effis.tooty.xyz/',
+                    ),
+                    onChanged: (value) async {
+                      final prefs = await SharedPreferences.getInstance();
+                      prefs.setString("effis-url", value);
+                    },
                   ),
-                  onChanged: (value) async {
-                    final prefs = await SharedPreferences.getInstance();
-                    prefs.setString("effis-url", value);
-                  },
-                ),
-              ],
-            );
-          }),
+                ],
+              );
+            }),
+          ),
         ),
       ),
     );
