@@ -6,6 +6,7 @@ import 'package:eludris/common.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' show join;
 import 'package:yaru/yaru.dart';
 
 class MissingManifest implements Exception {}
@@ -55,8 +56,7 @@ class PluginInfo {
   PluginInfo(
     this.path,
   ) {
-    final manifestPath =
-        File('${path.path}${Platform.pathSeparator}manifest.json');
+    final manifestPath = File(join(path.path, 'manifest.json'));
 
     if (!manifestPath.existsSync()) {
       throw MissingManifest();
@@ -155,8 +155,8 @@ class _PluginsScaffoldState extends State<PluginsScaffold> {
       throw Exception('Unsupported file type');
     }
     final pluginsDir = await _getPluginDir();
-    final pluginDir = Directory(
-        '${pluginsDir.path}${Platform.pathSeparator}${file.name.substring(0, file.name.lastIndexOf('.'))}');
+    final pluginDir = Directory(join(
+        pluginsDir.path, file.name.substring(0, file.name.lastIndexOf('.'))));
     if (await pluginDir.exists()) {
       await pluginDir.delete(recursive: true);
     }
@@ -185,13 +185,11 @@ class _PluginsScaffoldState extends State<PluginsScaffold> {
       final filename = archiveFile.name;
       if (archiveFile.isFile) {
         final data = archiveFile.content as List<int>;
-        final file =
-            File('${pluginDir.path}${Platform.pathSeparator}$filename');
+        final file = File(join(pluginDir.path, filename));
         await file.create(recursive: true);
         await file.writeAsBytes(data);
       } else {
-        final dir =
-            Directory('${pluginDir.path}${Platform.pathSeparator}$filename');
+        final dir = Directory(join(pluginDir.path, filename));
         await dir.create(recursive: true);
       }
     }
@@ -345,8 +343,7 @@ class _PluginsScaffoldState extends State<PluginsScaffold> {
 
   Future<Directory> _getPluginDir() async {
     final appDocDir = await getApplicationDocumentsDirectory();
-    final pluginsDir =
-        Directory('${appDocDir.path}${Platform.pathSeparator}plugins');
+    final pluginsDir = Directory(join(appDocDir.path, 'plugins'));
     return pluginsDir;
   }
 }
