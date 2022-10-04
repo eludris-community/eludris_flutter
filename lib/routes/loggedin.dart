@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:eludris/common.dart';
 import 'package:eludris/lua/api.dart';
 import 'package:eludris/lua/common.dart';
 import 'package:eludris/models/gateway/message.dart';
@@ -174,6 +175,7 @@ class _LoggedInState extends State<LoggedIn> {
                   children: [
                     IconButton(
                         onPressed: () async {
+                          requestFilePermissions();
                           final files = await FilePicker.platform.pickFiles();
                           if (files != null) {
                             setState(() {
