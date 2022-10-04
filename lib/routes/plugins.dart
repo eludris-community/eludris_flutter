@@ -142,7 +142,7 @@ class _PluginsScaffoldState extends State<PluginsScaffold> {
     }
   }
 
-  Future<bool> _addPlugin(PlatformFile file) async {
+  Future<bool?> _addPlugin(PlatformFile file) async {
     Archive archive;
     if (file.extension == 'zip') {
       archive = ZipDecoder().decodeBuffer(InputFileStream(file.path!));
@@ -165,10 +165,7 @@ class _PluginsScaffoldState extends State<PluginsScaffold> {
     final manifestStream = archive.findFile('manifest.json')?.content;
 
     if (manifestStream == null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: const Text('Plugin is missing a manifest file'),
-      ));
-      return false;
+      return null;
     }
     final manifest = Manifest.fromJson(jsonDecode(String.fromCharCodes(
         manifestStream is List<int>
@@ -297,23 +294,28 @@ class _PluginsScaffoldState extends State<PluginsScaffold> {
                           ),
                           const Spacer(),
                           IconButton(
-                              onPressed: () async {
-                                await requestFilePermissions();
-                                final file = (await FilePicker.platform
-                                        .pickFiles(
-                                            withData: true,
-                                            allowedExtensions: [
-                                              "zip",
-                                              "tar",
-                                              "gz"
-                                            ],
-                                            type: FileType.custom))
-                                    ?.files
-                                    .single;
-                                if (file == null) return;
-                                if (await _addPlugin(file)) {
-                                  _loadPlugins();
-                                }
+                              onPressed: () {
+                                requestFilePermissions();
+                                FilePicker.platform
+                                    .pickFiles(
+                                        withData: true,
+                                        allowedExtensions: ["zip", "tar", "gz"],
+                                        type: FileType.custom)
+                                    .then((result) {
+                                  final file = result?.files.first;
+                                  if (file == null) return;
+                                  _addPlugin(file).then((accepted) {
+                                    if (accepted is bool) {
+                                      if (accepted) _loadPlugins();
+                                    } else {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(const SnackBar(
+                                        content: Text(
+                                            'Plugin is missing a manifest file'),
+                                      ));
+                                    }
+                                  });
+                                });
                               },
                               icon: const Icon(Icons.add))
                         ],
