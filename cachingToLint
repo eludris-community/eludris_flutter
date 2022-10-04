@@ -1,0 +1,11 @@
+
+// outputs.cacheIf { true }
+
+task lintKotlinAll(type: LintTask, group: 'verification') {
+    outputs.cacheIf { true } // this enables the Gradle build cache
+    source files(modulesToCheck.collect { "$it/src" }) // list of Gradle projects
+    reports = [
+            'plain': file("$buildDir/reports/ktlint/all-lint.txt"),
+            'html' : file("$buildDir/reports/ktlint/all-lint.html")
+    ]
+}
