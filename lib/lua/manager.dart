@@ -1,11 +1,11 @@
 import 'dart:convert';
-import 'dart:developer';
 import 'dart:io';
 
-import 'package:archive/archive.dart';
 import 'package:archive/archive_io.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
+
+// ignore: depend_on_referenced_packages
 import 'package:path/path.dart' show join;
 
 class MissingManifest implements Exception {}
@@ -170,6 +170,7 @@ class PluginManager {
 
   Future<void> loadPlugins() async {
     final pluginsDir = await _getPluginsDir();
+    await pluginsDir.create();
 
     _plugins.clear();
     for (final event in await pluginsDir.list().toList()) {

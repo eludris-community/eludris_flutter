@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:yaru/yaru.dart';
 
@@ -20,7 +20,7 @@ class DefaultYaru extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return YaruTheme(
-      data: YaruThemeData(variant: YaruVariant.purple),
+      data: const YaruThemeData(variant: YaruVariant.purple),
       child: child,
     );
   }
