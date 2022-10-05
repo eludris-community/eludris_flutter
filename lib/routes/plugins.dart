@@ -17,6 +17,22 @@ const Map<String, String> permissionsExplained = {
       "This plugin can modify your messages before you send them",
 };
 
+class Permission extends StatelessWidget {
+  final String permission;
+  const Permission(this.permission, {super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(permission, style: TextStyle(fontWeight: FontWeight.bold)),
+        Text(permissionsExplained[permission]!)
+      ],
+    );
+  }
+}
+
 class Plugins extends StatefulWidget {
   const Plugins({
     Key? key,
@@ -58,62 +74,13 @@ class _PluginsState extends State<Plugins> {
   }
 
   Future<bool?> _askAcceptPlugin(Manifest manifest) async {
-    final accepted = await showModalBottomSheet<bool?>(
-      context: context,
+    final accepted = await Navigator.of(context).push<bool?>(MaterialPageRoute(
       builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text("${manifest.name} - ${manifest.version}",
-                  style: Theme.of(context).textTheme.bodyText1),
-              Text(manifest.description),
-              Text("Created by ${manifest.author} - ${manifest.license}"),
-              const SizedBox(height: 8),
-              Text("Permissions", style: Theme.of(context).textTheme.bodyText1),
-              SizedBox(
-                width: 400,
-                child: Column(
-                  children: manifest.permissions
-                      .map(
-                        (e) => Row(
-                          children: [
-                            Text(e),
-                            const Spacer(),
-                            Text(permissionsExplained[e]!)
-                          ],
-                        ),
-                      )
-                      .toList(),
-                ),
-              ),
-              const Spacer(),
-              Row(children: [
-                Expanded(
-                    child: ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.of(context).pop(false);
-                  },
-                  icon: const Icon(Icons.close),
-                  label: const Text("Discard"),
-                )),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.of(context).pop(true);
-                    },
-                    icon: const Icon(Icons.check),
-                    label: const Text("Add"),
-                  ),
-                ),
-              ])
-            ],
-          ),
+        return DefaultYaru(
+          AskAcceptPlugin(manifest),
         );
       },
-    );
+    ));
     return accepted;
   }
 
@@ -186,6 +153,65 @@ class _PluginsState extends State<Plugins> {
                       .toList(),
                 ),
               )
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class AskAcceptPlugin extends StatelessWidget {
+  final Manifest manifest;
+  const AskAcceptPlugin(
+    this.manifest, {
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Center(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text("${manifest.name} - ${manifest.version}",
+                  style: Theme.of(context).textTheme.headline5),
+              Text(manifest.description),
+              Text("Created by ${manifest.author} - ${manifest.license}"),
+              const SizedBox(height: 20),
+              Text("Permissions", style: Theme.of(context).textTheme.headline5),
+              Column(
+                children: manifest.permissions
+                    .map((e) => Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8.0),
+                          child: Permission(e),
+                        ))
+                    .toList(),
+              ),
+              const Spacer(),
+              Row(children: [
+                Expanded(
+                    child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).pop(false);
+                  },
+                  icon: const Icon(Icons.close),
+                  label: const Text("Discard"),
+                )),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).pop(true);
+                    },
+                    icon: const Icon(Icons.check),
+                    label: const Text("Add"),
+                  ),
+                ),
+              ])
             ],
           ),
         ),
