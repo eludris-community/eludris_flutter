@@ -1,3 +1,4 @@
+import 'package:eludris/common.dart';
 import 'package:eludris/routes/plugins.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -73,7 +74,8 @@ class SettingsRoute extends StatelessWidget {
                       ElevatedButton(
                           onPressed: () {
                             Navigator.of(context).push(MaterialPageRoute(
-                                builder: (context) => const PluginsRoute()));
+                                builder: (context) =>
+                                    const DefaultYaru(Plugins())));
                           },
                           child: const Text("Plugin Settings")),
                       const Spacer(),

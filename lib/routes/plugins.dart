@@ -3,15 +3,12 @@ import 'dart:io';
 
 import 'package:archive/archive_io.dart';
 import 'package:eludris/common.dart';
+import 'package:eludris/lua/manager.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:path/path.dart' show join;
+import 'package:path/path.dart' as path;
 import 'package:yaru/yaru.dart';
-
-class MissingManifest implements Exception {}
-
-class PluginRejection implements Exception {}
 
 const Map<String, String> permissionsExplained = {
   "READ_MESSAGES": "This plugin can read ALL messages",
@@ -20,178 +17,44 @@ const Map<String, String> permissionsExplained = {
       "This plugin can modify your messages before you send them",
 };
 
-class Manifest {
-  final String name;
-  final String version;
-  final String description;
-  final String author;
-  final String license;
-  final List<String> permissions;
-
-  Manifest({
-    required this.name,
-    required this.version,
-    required this.description,
-    required this.author,
-    required this.license,
-    required this.permissions,
-  });
-
-  static Manifest fromJson(Map<String, dynamic> json) {
-    return Manifest(
-        author: json['author'],
-        license: json['license'],
-        permissions: json['permissions'].cast<String>(),
-        name: json['name'],
-        version: json['version'],
-        description: json['description']);
-  }
-}
-
-class PluginInfo {
-  late final Manifest manifest;
-  late final List<String> hooks;
-  late final Directory path;
-
-  PluginInfo(
-    this.path,
-  ) {
-    final manifestPath = File(join(path.path, 'manifest.json'));
-
-    if (!manifestPath.existsSync()) {
-      throw MissingManifest();
-    }
-
-    final manifestData = manifestPath.readAsStringSync();
-
-    if (manifestData.isEmpty) {
-      throw MissingManifest();
-    }
-
-    manifest = Manifest.fromJson(jsonDecode(manifestData));
-
-    hooks = path
-        .listSync()
-        .where((element) {
-          return element is File && element.path.endsWith('.lua');
-        })
-        .map((e) => e.path)
-        .toList();
-  }
-}
-
-class PluginsRoute extends StatelessWidget {
-  const PluginsRoute({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const YaruTheme(
-      data: YaruThemeData(variant: YaruVariant.purple),
-      child: PluginsScaffold(),
-    );
-  }
-}
-
-class PluginsScaffold extends StatefulWidget {
-  const PluginsScaffold({
+class Plugins extends StatefulWidget {
+  const Plugins({
     Key? key,
   }) : super(key: key);
 
   @override
-  State<PluginsScaffold> createState() => _PluginsScaffoldState();
+  State<Plugins> createState() => _PluginsState();
 }
 
-class _PluginsScaffoldState extends State<PluginsScaffold> {
-  final List<PluginInfo> _plugins = [];
-  final List<String> _failedPluginsInfo = [];
-  String? _pluginsPath;
+enum PluginState { enabled, disabled, missingManifest }
+
+class _PluginsState extends State<Plugins> {
+  final manager = PluginManager();
 
   Future<void> _loadPlugins() async {
-    final pluginsDir = await _getPluginDir();
-    if (!await pluginsDir.exists()) {
-      await pluginsDir.create();
-    }
-    final files = <PluginInfo>[];
-
-    for (final file in await pluginsDir.list().toList()) {
-      if (file is Directory) {
-        try {
-          files.add(
-            PluginInfo(
-              file,
-            ),
-          );
-        } on MissingManifest {
-          final name = file.path.split(Platform.pathSeparator).last;
-          _failedPluginsInfo.add(
-              'Unable to load Plugin $name, plugin is missing a manifest file (.json)');
-          await file.delete(recursive: true);
-        }
-      }
-    }
-
-    setState(() {
-      _plugins.clear();
-      _plugins.addAll(files);
-    });
-    if (_failedPluginsInfo.isNotEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(_failedPluginsInfo.join('\n')),
-      ));
-      _failedPluginsInfo.clear();
-    }
+    await manager.loadPlugins();
+    setState(() {});
   }
 
-  Future<bool?> _addPlugin(PlatformFile file) async {
-    Archive archive;
-    if (file.extension == 'zip') {
-      archive = ZipDecoder().decodeBuffer(InputFileStream(file.path!));
-    } else if (file.extension == 'tar') {
-      archive = TarDecoder().decodeBytes(file.bytes!);
-    } else if (file.extension == 'gz') {
-      final bytes = GZipDecoder().decodeBytes(file.bytes!);
-      archive = TarDecoder().decodeBytes(bytes);
-    } else {
-      throw Exception('Unsupported file type');
-    }
-    final pluginsDir = await _getPluginDir();
-    final pluginDir = Directory(join(
-        pluginsDir.path, file.name.substring(0, file.name.lastIndexOf('.'))));
-    if (await pluginDir.exists()) {
-      await pluginDir.delete(recursive: true);
-    }
-    await pluginDir.create(recursive: true);
+  Future<PluginState> _addPlugin(PlatformFile file) async {
+    await manager.addPlugin(path.basenameWithoutExtension(file.name), file);
+    final dir =
+        await manager.getPluginDir(path.basenameWithoutExtension(file.name));
+    final manifest = await manager.getManifest(dir.path);
 
-    final manifestStream = archive.findFile('manifest.json')?.content;
-
-    if (manifestStream == null) {
-      return null;
+    if (manifest == null) {
+      return PluginState.missingManifest;
     }
-    final manifest = Manifest.fromJson(jsonDecode(String.fromCharCodes(
-        manifestStream is List<int>
-            ? manifestStream
-            : manifestStream.toList())));
+
     bool accepted = await _askAcceptPlugin(manifest) ?? false;
-
     if (!accepted) {
-      await pluginDir.delete(recursive: true);
-      return false;
+      manager.deletePlugin(path: file.path!, reload: false);
+      return PluginState.disabled;
+    } else {
+      await manager.loadPlugins();
     }
 
-    for (final archiveFile in archive.files) {
-      final filename = archiveFile.name;
-      if (archiveFile.isFile) {
-        final data = archiveFile.content as List<int>;
-        final file = File(join(pluginDir.path, filename));
-        await file.create(recursive: true);
-        await file.writeAsBytes(data);
-      } else {
-        final dir = Directory(join(pluginDir.path, filename));
-        await dir.create(recursive: true);
-      }
-    }
-
-    return true;
+    return PluginState.enabled;
   }
 
   Future<bool?> _askAcceptPlugin(Manifest manifest) async {
@@ -257,9 +120,6 @@ class _PluginsScaffoldState extends State<PluginsScaffold> {
   @override
   void initState() {
     super.initState();
-    _getPluginDir().then((value) => setState(() {
-          _pluginsPath = value.path;
-        }));
     _loadPlugins();
   }
 
@@ -276,64 +136,54 @@ class _PluginsScaffoldState extends State<PluginsScaffold> {
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(8.0),
+          padding: const EdgeInsets.all(16.0),
           child: Column(
             children: [
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Row(
-                        children: [
-                          Text(
-                            'Plugins',
-                            style: Theme.of(context).textTheme.headline5,
-                          ),
-                          const Spacer(),
-                          IconButton(
-                              onPressed: () {
-                                requestFilePermissions();
-                                FilePicker.platform
-                                    .pickFiles(
-                                        withData: true,
-                                        allowedExtensions: ["zip", "tar", "gz"],
-                                        type: FileType.custom)
-                                    .then((result) {
-                                  final file = result?.files.first;
-                                  if (file == null) return;
-                                  _addPlugin(file).then((accepted) {
-                                    if (accepted is bool) {
-                                      if (accepted) _loadPlugins();
-                                    } else {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(const SnackBar(
-                                        content: Text(
-                                            'Plugin is missing a manifest file'),
-                                      ));
-                                    }
-                                  });
-                                });
-                              },
-                              icon: const Icon(Icons.add))
-                        ],
+                      Text(
+                        'Plugins',
+                        style: Theme.of(context).textTheme.headline5,
                       ),
-                      Text("Path: $_pluginsPath"),
+                      const Spacer(),
+                      IconButton(
+                          onPressed: () {
+                            requestFilePermissions();
+                            FilePicker.platform
+                                .pickFiles(
+                                    withData: true,
+                                    allowedExtensions: ["zip", "tar", "gz"],
+                                    type: FileType.custom)
+                                .then((result) {
+                              final file = result?.files.first;
+                              if (file == null) return;
+                              _addPlugin(file).then((accepted) {
+                                if (accepted == PluginState.enabled) {
+                                  _loadPlugins();
+                                } else if (accepted ==
+                                    PluginState.missingManifest) {
+                                  ScaffoldMessenger.of(context)
+                                      .showSnackBar(const SnackBar(
+                                    content: Text(
+                                        'Cannot load plugin - invalid manifest'),
+                                  ));
+                                }
+                              });
+                            });
+                          },
+                          icon: const Icon(Icons.add))
                     ],
                   ),
-                ),
+                ],
               ),
               Expanded(
                 child: ListView(
-                  children: [
-                    for (final plugin in _plugins)
-                      Plugin(
-                        plugin,
-                        _loadPlugins,
-                      ),
-                  ],
+                  children: manager.plugins
+                      .map((p) => Plugin(p, _loadPlugins))
+                      .toList(),
                 ),
               )
             ],
@@ -341,12 +191,6 @@ class _PluginsScaffoldState extends State<PluginsScaffold> {
         ),
       ),
     );
-  }
-
-  Future<Directory> _getPluginDir() async {
-    final appDocDir = await getApplicationDocumentsDirectory();
-    final pluginsDir = Directory(join(appDocDir.path, 'plugins'));
-    return pluginsDir;
   }
 }
 
@@ -369,9 +213,8 @@ class Plugin extends StatelessWidget {
         trailing: IconButton(
             icon: const Icon(Icons.delete_forever),
             onPressed: () {
-              Directory(plugin.path.path)
-                  .delete(recursive: true)
-                  .then((value) => onDeleted());
+              plugin.delete();
+              onDeleted();
             }),
       ),
     );
