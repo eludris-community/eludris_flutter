@@ -156,7 +156,11 @@ class _LoggedInState extends State<LoggedIn> {
                   controller: _scrollController,
                   itemBuilder: (context, index) {
                     final message = _messages[index];
-                    return Message(message: message);
+                    return Message(
+                      message: message,
+                      displayAuthor: index != 0 &&
+                          _messages[index - 1].author != message.author,
+                    );
                   },
                 ),
               ),
