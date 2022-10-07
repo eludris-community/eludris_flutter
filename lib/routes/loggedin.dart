@@ -158,7 +158,8 @@ class _LoggedInState extends State<LoggedIn> {
                     final message = _messages[index];
                     return Message(
                       message: message,
-                      display_author: index != 0 && _messages[index-1].author != message.author,
+                      displayAuthor: index != 0 &&
+                          _messages[index - 1].author != message.author,
                     );
                   },
                 ),
