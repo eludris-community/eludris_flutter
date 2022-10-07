@@ -58,9 +58,9 @@ class _LoggedInState extends State<LoggedIn> {
   final _scrollController = ScrollController();
 
   bool textEnabled = true;
-  String effisUrl = 'https://eludris.tooty.xyz';
+  String effisUrl = 'https://effis.tooty.xyz';
   String httpUrl = "https://eludris.tooty.xyz";
-  String gatewayUrl = "wss://eludris.tooty.xyz/ws";
+  String gatewayUrl = "wss://eludris.tooty.xyz/ws/";
 
   @override
   void dispose() {
