@@ -184,14 +184,15 @@ class _LoggedInState extends State<LoggedIn> {
                                 'file', file.path));
 
                             final result = await request.send();
-                            final data = await jsonDecode(
-                                await result.stream.bytesToString());
+                            final data = await result.stream.bytesToString();
+                            final match =
+                                RegExp(r"\d+").firstMatch(data)!.group(0);
 
                             final uri = Uri.parse(effisUrl);
                             _textController.text += Uri(
                               host: uri.host,
                               scheme: uri.scheme,
-                              path: data["id"].toString(),
+                              path: match!,
                             ).toString();
 
                             setState(() {
