@@ -7,6 +7,7 @@ import 'package:markdown/markdown.dart' as markdown;
 class Message extends StatelessWidget {
   const Message({
     Key? key,
+    required this.display_author,
     required this.message,
   }) : super(key: key);
 
@@ -20,13 +21,16 @@ class Message extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 8.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              message.author,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
+          children: (
+            display_author ? [
+              Text(
+                message.author,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
+            ] : []
+          ) + [
             Theme(
               data: Theme.of(context).copyWith(
                 textTheme: Theme.of(context).textTheme.apply(
