@@ -39,7 +39,7 @@ dependencies:
   flutter_markdown: ^0.6.12
   yaru: ^0.3.3
   shared_preferences: ^2.0.15
-  file_picker: ^5.2.1
+  file_picker: ^5.2.2
 
 dev_dependencies:
   flutter_test:
