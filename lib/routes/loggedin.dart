@@ -6,10 +6,12 @@ import 'package:eludris/lua/manager.dart';
 import 'package:eludris/models/gateway/message.dart';
 import 'package:eludris/widgets/message.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' show post, MultipartRequest, MultipartFile;
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yaru/yaru.dart';
+
+final getIt = GetIt.instance;
 
 class ConnectionStatus extends StatelessWidget {
   final String name;
@@ -18,25 +20,14 @@ class ConnectionStatus extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<SharedPreferences>(
-        future: SharedPreferences.getInstance(),
-        builder: (context, snapshot) {
-          if (snapshot.hasError) return const Icon(Icons.heart_broken);
-          if (!snapshot.hasData) return const Icon(Icons.hourglass_empty);
-
-          final prefs = snapshot.data!;
-
-          final httpUrl =
-              prefs.getString('http-url') ?? 'https://eludris.tooty.xyz';
-
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Connected as $name'),
-              Text('Using ${Uri.parse(httpUrl).host}')
-            ],
-          );
-        });
+    final config = getIt<APIConfig>();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Connected as $name'),
+        Text('Using ${Uri.parse(config.httpUrl).host}')
+      ],
+    );
   }
 }
 
@@ -52,7 +43,6 @@ class LoggedIn extends StatefulWidget {
 }
 
 class _LoggedInState extends State<LoggedIn> {
-  final pluginManager = PluginManager();
   final _messages = <MessageData>[];
   StreamSubscription? _stream;
 
@@ -60,10 +50,9 @@ class _LoggedInState extends State<LoggedIn> {
   final FocusNode _focusNode = FocusNode();
   final _scrollController = ScrollController();
 
-  bool textEnabled = true;
-  String effisUrl = 'https://effis.tooty.xyz';
-  String httpUrl = "https://eludris.tooty.xyz";
-  String gatewayUrl = "wss://eludris.tooty.xyz/ws/";
+  bool _textEnabled = true;
+
+  get _config => getIt<APIConfig>();
 
   @override
   void dispose() {
@@ -79,9 +68,9 @@ class _LoggedInState extends State<LoggedIn> {
     _textController.clear();
 
     final message = MessageData(widget.name, text, true);
-    for (final plugin in pluginManager.plugins) {
+    for (final plugin in getIt<PluginManager>().plugins) {
       final messages =
-          plugin.runPreSendMessage(http: httpUrl, message: message);
+          plugin.runPreSendMessage(http: _config.httpUrl, message: message);
       setState(() {
         _messages.addAll(messages);
       });
@@ -91,7 +80,7 @@ class _LoggedInState extends State<LoggedIn> {
       _messages.add(message);
     });
     await post(
-      Uri.parse('$httpUrl/messages'),
+      Uri.parse('${_config.httpUrl}/messages'),
       body: jsonEncode({
         'author': message.author,
         'content': message.content,
@@ -103,14 +92,11 @@ class _LoggedInState extends State<LoggedIn> {
   }
 
   _initState() async {
-    final prefs = await SharedPreferences.getInstance();
-    httpUrl = prefs.getString('http-url') ?? httpUrl;
-    gatewayUrl = prefs.getString('gateway-url') ?? gatewayUrl;
-    effisUrl = prefs.getString('effis-url') ?? effisUrl;
+    final config = getIt<APIConfig>();
 
-    final ws = await WebSocket.connect(gatewayUrl);
+    final ws = await WebSocket.connect(config.wsUrl);
     ws.pingInterval = const Duration(seconds: 10);
-    pluginManager.loadPlugins();
+    getIt<PluginManager>().loadPlugins();
 
     _stream = ws.listen(_wsListen);
   }
@@ -133,11 +119,11 @@ class _LoggedInState extends State<LoggedIn> {
       }
     });
 
-    for (final plugin in pluginManager.plugins) {
+    for (final plugin in getIt<PluginManager>().plugins) {
       if (plugin.hooks.contains('postGotMessage') &&
           plugin.manifest.permissions.contains('READ_MESSAGES')) {
         final pMessages =
-            plugin.runPostGotMessage(http: httpUrl, message: message);
+            plugin.runPostGotMessage(http: _config.httpUrl, message: message);
         setState(() {
           _messages.addAll(pMessages);
         });
@@ -204,12 +190,12 @@ class _LoggedInState extends State<LoggedIn> {
                           final files = await FilePicker.platform.pickFiles();
                           if (files != null) {
                             setState(() {
-                              textEnabled = false;
+                              _textEnabled = false;
                             });
                             final file = File(files.files.single.path!);
 
-                            final request = MultipartRequest(
-                                "POST", Uri.parse("$effisUrl/upload"));
+                            final request = MultipartRequest("POST",
+                                Uri.parse("${_config.effisUrl}/upload"));
                             request.fields['name'] = file.path.split('/').last;
                             request.files.add(await MultipartFile.fromPath(
                                 'file', file.path));
@@ -219,7 +205,7 @@ class _LoggedInState extends State<LoggedIn> {
                             final match =
                                 RegExp(r"\d+").firstMatch(data)!.group(0);
 
-                            final uri = Uri.parse(effisUrl);
+                            final uri = Uri.parse(_config.effisUrl);
                             _textController.text += Uri(
                               host: uri.host,
                               scheme: uri.scheme,
@@ -227,7 +213,7 @@ class _LoggedInState extends State<LoggedIn> {
                             ).toString();
 
                             setState(() {
-                              textEnabled = true;
+                              _textEnabled = true;
                             });
 
                             _focusNode.requestFocus();
@@ -238,7 +224,7 @@ class _LoggedInState extends State<LoggedIn> {
                       child: TextField(
                         autofocus: true,
                         controller: _textController,
-                        enabled: textEnabled,
+                        enabled: _textEnabled,
                         focusNode: _focusNode,
                         onSubmitted: (data) {
                           _sendMessage();

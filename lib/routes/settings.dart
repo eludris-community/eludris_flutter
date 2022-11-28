@@ -1,11 +1,16 @@
 import 'package:eludris/common.dart';
 import 'package:eludris/routes/plugins.dart';
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yaru/yaru.dart';
 
+final getIt = GetIt.instance;
+
 class SettingsRoute extends StatelessWidget {
   const SettingsRoute({super.key});
+
+  APIConfig get _config => getIt<APIConfig>();
 
   @override
   Widget build(BuildContext context) {
@@ -21,72 +26,71 @@ class SettingsRoute extends StatelessWidget {
         body: SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(8.0),
-            child: FutureBuilder<SharedPreferences>(future: Future(() async {
-              return await SharedPreferences.getInstance();
-            }), builder: (context, snapshot) {
-              if (snapshot.hasError) {
-                return const Icon(Icons.heart_broken);
-              }
-              if (!snapshot.hasData) {
-                return const Icon(Icons.hourglass_empty);
-              }
-              return Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  TextFormField(
-                    initialValue: snapshot.data!.getString("http-url"),
-                    decoration: const InputDecoration(
-                      labelText: 'HTTP URL',
-                      hintText: 'https://eludris.tooty.xyz/',
-                    ),
-                    onChanged: (value) async {
-                      final prefs = await SharedPreferences.getInstance();
-                      prefs.setString("http-url", value);
-                    },
-                  ),
-                  const SizedBox(height: 8.0),
-                  TextFormField(
-                    initialValue: snapshot.data!.getString("gateway-url"),
-                    decoration: const InputDecoration(
-                      labelText: 'Gateway URL',
-                      hintText: 'wss://eludris.tooty.xyz/ws',
-                    ),
-                    onChanged: (value) async {
-                      final prefs = await SharedPreferences.getInstance();
-                      prefs.setString("gateway-url", value);
-                    },
-                  ),
-                  const SizedBox(height: 8.0),
-                  TextFormField(
-                    initialValue: snapshot.data!.getString("effis-url"),
-                    decoration: const InputDecoration(
-                      labelText: 'Effis URL',
-                      hintText: 'https://effis.tooty.xyz/',
-                    ),
-                    onChanged: (value) async {
-                      final prefs = await SharedPreferences.getInstance();
-                      prefs.setString("effis-url", value);
-                    },
-                  ),
-                  const SizedBox(height: 8.0),
-                  Row(
-                    children: [
-                      ElevatedButton(
-                          onPressed: () {
-                            Navigator.of(context).push(MaterialPageRoute(
-                                builder: (context) =>
-                                    const DefaultYaru(Plugins())));
-                          },
-                          child: const Text("Plugin Settings")),
-                      const Spacer(),
-                    ],
-                  )
-                ],
-              );
-            }),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Input(
+                    label: "HTTP URL",
+                    hint: APIConfig.defaultHttpUrl,
+                    prefsKey: "http-url",
+                    initialValue: _config.httpUrl),
+                const SizedBox(height: 8.0),
+                Input(
+                    label: "Gateway URL",
+                    hint: APIConfig.defaultWsUrl,
+                    prefsKey: "gateway-url",
+                    initialValue: _config.wsUrl),
+                const SizedBox(height: 8.0),
+                Input(
+                    label: "Effis URL",
+                    hint: APIConfig.defaultEffisUrl,
+                    prefsKey: "effis-url",
+                    initialValue: _config.effisUrl),
+                const SizedBox(height: 8.0),
+                Row(
+                  children: [
+                    ElevatedButton(
+                        onPressed: () {
+                          Navigator.of(context).push(MaterialPageRoute(
+                              builder: (context) =>
+                                  const DefaultYaru(Plugins())));
+                        },
+                        child: const Text("Plugin Settings")),
+                    const Spacer(),
+                  ],
+                )
+              ],
+            ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class Input extends StatelessWidget {
+  final String label;
+  final String hint;
+  final String prefsKey;
+  final String initialValue;
+
+  const Input(
+      {required this.label,
+      required this.hint,
+      required this.prefsKey,
+      required this.initialValue,
+      super.key});
+  SharedPreferences get _prefs => getIt<SharedPreferences>();
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      initialValue: initialValue,
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+      ),
+      onChanged: (value) => _prefs.setString(prefsKey, value),
     );
   }
 }
