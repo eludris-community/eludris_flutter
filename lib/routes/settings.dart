@@ -11,7 +11,6 @@ class SettingsRoute extends StatelessWidget {
   const SettingsRoute({super.key});
 
   APIConfig get _config => getIt<APIConfig>();
-  get _prefs => getIt<SharedPreferences>();
 
   @override
   Widget build(BuildContext context) {
@@ -81,7 +80,6 @@ class Input extends StatelessWidget {
       required this.prefsKey,
       required this.initialValue,
       super.key});
-  APIConfig get _config => getIt<APIConfig>();
   SharedPreferences get _prefs => getIt<SharedPreferences>();
 
   @override

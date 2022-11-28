@@ -9,7 +9,6 @@ import 'package:file_picker/file_picker.dart';
 import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' show post, MultipartRequest, MultipartFile;
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yaru/yaru.dart';
 
 final getIt = GetIt.instance;
