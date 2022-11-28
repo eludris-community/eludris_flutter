@@ -5,4 +5,4 @@ A cross-platform Eludris client with full feature support.
 
 | Windows | Linux | Android | Web       | IOS        | MacOS                            |
 |---------|-------|---------|-----------|------------|----------------------------------|
-| ✅       | ✅     | ✅       | 🟧 Planned | 🟥 Unknown  | 🟨 Compilable (but not supported) |
+| ✅       | ✅     | ✅       | ✅  | 🟥 Unknown  | 🟨 Compilable (but not supported) |

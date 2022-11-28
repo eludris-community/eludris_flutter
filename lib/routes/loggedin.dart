@@ -1,13 +1,17 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
+import 'package:flutter/foundation.dart';
+import 'package:websocket_universal/websocket_universal.dart';
+
 import 'package:eludris/common.dart';
-import 'package:eludris/lua/manager.dart';
+import 'package:eludris/lua/manager.dart'
+    if (dart.library.html) 'package:eludris/lua/web.dart';
 import 'package:eludris/models/gateway/message.dart';
 import 'package:eludris/widgets/message.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:get_it/get_it.dart';
-import 'package:http/http.dart' show post, MultipartRequest, MultipartFile;
+import 'package:http/http.dart'
+    show post, MultipartRequest, MultipartFile, Request;
 import 'package:flutter/material.dart';
 import 'package:yaru/yaru.dart';
 
@@ -50,15 +54,17 @@ class _LoggedInState extends State<LoggedIn> {
   final FocusNode _focusNode = FocusNode();
   final _scrollController = ScrollController();
 
+  IWebSocketHandler<String, String>? _textSocketHandler;
   bool _textEnabled = true;
 
-  get _config => getIt<APIConfig>();
+  APIConfig get _config => getIt<APIConfig>();
 
   @override
   void dispose() {
     // Clean up the controller when the widget is disposed.
     _textController.dispose();
     _scrollController.dispose();
+    _textSocketHandler?.close();
     _stream?.cancel();
     super.dispose();
   }
@@ -68,37 +74,47 @@ class _LoggedInState extends State<LoggedIn> {
     _textController.clear();
 
     final message = MessageData(widget.name, text, true);
-    for (final plugin in getIt<PluginManager>().plugins) {
-      final messages =
-          plugin.runPreSendMessage(http: _config.httpUrl, message: message);
-      setState(() {
-        _messages.addAll(messages);
-      });
+    if (!kIsWeb) {
+      for (final plugin in getIt<PluginManager>().plugins) {
+        final messages =
+            plugin.runPreSendMessage(http: _config.httpUrl, message: message);
+        setState(() {
+          _messages.addAll(messages);
+        });
+      }
     }
 
     setState(() {
       _messages.add(message);
     });
-    await post(
-      Uri.parse('${_config.httpUrl}/messages'),
-      body: jsonEncode({
+
+    Request("POST", Uri.parse(_config.httpUrl + '/messages'))
+      ..body = jsonEncode({
         'author': message.author,
         'content': message.content,
-      }),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    );
+      })
+      ..send();
   }
 
   _initState() async {
     final config = getIt<APIConfig>();
+    const connectionOptions = SocketConnectionOptions(
+      pingIntervalMs: 10000,
+    );
 
-    final ws = await WebSocket.connect(config.wsUrl);
-    ws.pingInterval = const Duration(seconds: 10);
-    getIt<PluginManager>().loadPlugins();
+    final IMessageProcessor<String, String> textSocketProcessor =
+        SocketSimpleTextProcessor();
+    final textSocketHandler = IWebSocketHandler<String, String>.createClient(
+      _config.wsUrl, // Postman echo ws server
+      textSocketProcessor,
+      connectionOptions: connectionOptions,
+    );
 
-    _stream = ws.listen(_wsListen);
+    if (!kIsWeb) {
+      getIt<PluginManager>().loadPlugins();
+    }
+    _stream = textSocketHandler.incomingMessagesStream.listen(_wsListen);
+    await textSocketHandler.connect();
   }
 
   void _wsListen(event) {
@@ -119,14 +135,16 @@ class _LoggedInState extends State<LoggedIn> {
       }
     });
 
-    for (final plugin in getIt<PluginManager>().plugins) {
-      if (plugin.hooks.contains('postGotMessage') &&
-          plugin.manifest.permissions.contains('READ_MESSAGES')) {
-        final pMessages =
-            plugin.runPostGotMessage(http: _config.httpUrl, message: message);
-        setState(() {
-          _messages.addAll(pMessages);
-        });
+    if (!kIsWeb) {
+      for (final plugin in getIt<PluginManager>().plugins) {
+        if (plugin.hooks.contains('postGotMessage') &&
+            plugin.manifest.permissions.contains('READ_MESSAGES')) {
+          final pMessages =
+              plugin.runPostGotMessage(http: _config.httpUrl, message: message);
+          setState(() {
+            _messages.addAll(pMessages);
+          });
+        }
       }
     }
   }
@@ -192,13 +210,16 @@ class _LoggedInState extends State<LoggedIn> {
                             setState(() {
                               _textEnabled = false;
                             });
-                            final file = File(files.files.single.path!);
+                            final file = files.files.first;
 
                             final request = MultipartRequest("POST",
                                 Uri.parse("${_config.effisUrl}/upload"));
-                            request.fields['name'] = file.path.split('/').last;
-                            request.files.add(await MultipartFile.fromPath(
-                                'file', file.path));
+                            request.fields['name'] = file.name;
+                            request.files.add(await MultipartFile.fromBytes(
+                              'file',
+                              file.bytes!,
+                              filename: file.name,
+                            ));
 
                             final result = await request.send();
                             final data = await result.stream.bytesToString();

@@ -1,7 +1,9 @@
 import 'package:eludris/common.dart';
-import 'package:eludris/lua/manager.dart';
+import 'package:eludris/lua/manager.dart'
+    if (dart.library.html) 'package:eludris/lua/web.dart';
 import 'package:eludris/routes/home.dart';
 import 'package:eludris/routes/settings.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yaru/yaru.dart';
@@ -10,7 +12,9 @@ import 'package:get_it/get_it.dart';
 final getIt = GetIt.instance;
 
 Future<void> main() async {
-  getIt.registerSingleton<PluginManager>(PluginManager());
+  if (!kIsWeb) {
+    getIt.registerSingleton<PluginManager>(PluginManager());
+  }
   getIt.registerSingleton<APIConfig>(APIConfig());
   getIt.registerSingleton<SharedPreferences>(
       await SharedPreferences.getInstance());
