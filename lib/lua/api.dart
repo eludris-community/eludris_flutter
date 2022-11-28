@@ -1,18 +1,22 @@
 import 'dart:convert';
 
+import 'package:eludris/lua/manager.dart';
+import 'package:eludris/models/gateway/message.dart';
 import 'package:lua_dardo/lua.dart';
 import 'package:http/http.dart' show post;
 
 class LuaAPI {
   final API api;
   bool rejected = false;
+  final MessageData? message;
 
-  LuaAPI(this.api);
+  LuaAPI(this.api, {this.message});
 
   static const Map<String, DartFunction> _registry = {};
   static const Map<String, DartFunction> _apiMember = {
     "sendMessage": _sendMessage,
-    "rejectMessage": _rejectMessage
+    "rejectMessage": _rejectMessage,
+    "updateMessage": _updateMessage,
   };
 
   static LuaAPI _getThis(LuaState ls) => ls.toUserdata<LuaAPI>(1)!.data;
@@ -25,6 +29,17 @@ class LuaAPI {
 
     ls.newLib(_registry);
     return 1;
+  }
+
+  static int _updateMessage(LuaState ls) {
+    final api = _getThis(ls);
+    final String content = ls.checkString(2)!;
+    final String author = ls.checkString(3)!;
+    if (api.message != null) {
+      api.api.updateMessage(api.message!, content: content, author: author);
+    }
+
+    return 0;
   }
 
   static int _rejectMessage(LuaState ls) {
@@ -48,11 +63,35 @@ class LuaAPI {
 }
 
 class API {
+  final PluginInfo plugin;
+  final List<MessageData> messages = [];
+  final String http;
+
+  API({required this.http, required this.plugin});
+
   void sendMessage(String content, String author) async {
-    await post(Uri.parse("https://eludris.tooty.xyz/messages"),
+    if (!plugin.manifest.permissions.contains("SEND_MESSAGES")) {
+      throw Exception("Plugin does not have permission to send messages");
+    }
+    messages
+        .add(MessageData(author, content, true, plugin: plugin.manifest.name));
+
+    await post(Uri.parse("$http/messages"),
         body: jsonEncode({"content": content, "author": author}),
         headers: {
           "Content-Type": "application/json",
         });
+  }
+
+  void updateMessage(MessageData message, {String? content, String? author}) {
+    if (!plugin.manifest.permissions.contains("MODIFY_MESSAGES")) {
+      throw Exception("Plugin does not have permission to modify messages");
+    }
+    if (content != null) {
+      message.content = content;
+    }
+    if (author != null) {
+      message.author = author;
+    }
   }
 }

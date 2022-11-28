@@ -2,11 +2,14 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:archive/archive_io.dart';
+import 'package:eludris/lua/api.dart';
+import 'package:eludris/lua/common.dart';
+import 'package:eludris/models/gateway/message.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 
 // ignore: depend_on_referenced_packages
-import 'package:path/path.dart' show join;
+import 'package:path/path.dart' show join, basenameWithoutExtension;
 
 class MissingManifest implements Exception {}
 
@@ -45,6 +48,10 @@ class PluginInfo {
   late final Manifest manifest;
   late final List<String> hooks;
   late final Directory path;
+  static Map<String, String> requiredPermissions = {
+    "postGotMessage": "READ_MESSAGES",
+    "preSendMessage": "SEND_MESSAGES"
+  };
 
   PluginInfo(this.path, this.manager) {
     final manifestPath = File(join(path.path, 'manifest.json'));
@@ -66,12 +73,53 @@ class PluginInfo {
         .where((element) {
           return element is File && element.path.endsWith('.lua');
         })
-        .map((e) => e.path)
+        .map((e) => basenameWithoutExtension(e.path))
         .toList();
+  }
+
+  bool canRun(String hook) {
+    if (!hooks.contains(hook)) {
+      return false;
+    }
+
+    if (!requiredPermissions.containsKey(hook)) {
+      return true;
+    }
+
+    final permission = requiredPermissions[hook]!;
+
+    return manifest.permissions.contains(permission);
+  }
+
+  List<MessageData> runPostGotMessage(
+      {required String http, required MessageData message}) {
+    final api = LuaAPI(API(
+      http: http,
+      plugin: this,
+    ));
+    final ls = prepareLua(api, message);
+    final hookPath = '${path.path}/postGotMessage.lua';
+    ls.doString(File(hookPath).readAsStringSync());
+    return api.api.messages;
   }
 
   void delete({bool reload = true}) {
     manager.deletePlugin(reload: reload, plugin: this);
+  }
+
+  List<MessageData> runPreSendMessage(
+      {required String http, required MessageData message}) {
+    final api = LuaAPI(
+        API(
+          http: http,
+          plugin: this,
+        ),
+        message: message);
+
+    final ls = prepareLua(api, message);
+    final hookPath = '${path.path}/preSendMessage.lua';
+    ls.doString(File(hookPath).readAsStringSync());
+    return api.api.messages;
   }
 }
 

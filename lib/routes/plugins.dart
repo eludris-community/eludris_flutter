@@ -35,6 +35,52 @@ class Permission extends StatelessWidget {
   }
 }
 
+class Hook extends StatelessWidget {
+  final PluginInfo plugin;
+  final String name;
+
+  static Map<String, String> hooks = {
+    "postGotMessage": "Ran after receiving a message",
+    "preSendMessage": "Ran before sending a message",
+  };
+  static TextStyle cannotRunStyle = const TextStyle(
+      color: Colors.grey, decoration: TextDecoration.lineThrough);
+  const Hook(this.name, this.plugin, {super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final canRun = plugin.canRun(name);
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              name,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+              ).merge(!canRun ? cannotRunStyle : null),
+            ),
+            Text(hooks[name]!,
+                style:
+                    const TextStyle().merge(!canRun ? cannotRunStyle : null)),
+          ],
+        ),
+        if (!canRun)
+          const Tooltip(
+            triggerMode: TooltipTriggerMode.tap,
+            message: "This hook is disabled because its missing permission",
+            child: Icon(
+              Icons.warning,
+            ),
+          )
+      ],
+    );
+  }
+}
+
 class Plugins extends StatefulWidget {
   const Plugins({
     Key? key,
@@ -63,10 +109,11 @@ class _PluginsState extends State<Plugins> {
     if (manifest == null) {
       return PluginState.missingManifest;
     }
+    final plugin = PluginInfo(dir, manager);
 
-    bool accepted = await _askAcceptPlugin(manifest) ?? false;
+    bool accepted = await _askAcceptPlugin(plugin) ?? false;
     if (!accepted) {
-      manager.deletePlugin(path: file.path!, reload: false);
+      plugin.delete();
       return PluginState.disabled;
     } else {
       await manager.loadPlugins();
@@ -75,11 +122,11 @@ class _PluginsState extends State<Plugins> {
     return PluginState.enabled;
   }
 
-  Future<bool?> _askAcceptPlugin(Manifest manifest) async {
+  Future<bool?> _askAcceptPlugin(PluginInfo plugin) async {
     final accepted = await Navigator.of(context).push<bool?>(MaterialPageRoute(
       builder: (context) {
         return DefaultYaru(
-          AskPlugin(manifest),
+          AskPlugin(plugin),
         );
       },
     ));
@@ -117,30 +164,7 @@ class _PluginsState extends State<Plugins> {
                       ),
                       const Spacer(),
                       IconButton(
-                          onPressed: () {
-                            requestFilePermissions();
-                            FilePicker.platform
-                                .pickFiles(
-                                    withData: true,
-                                    allowedExtensions: ["zip", "tar", "gz"],
-                                    type: FileType.custom)
-                                .then((result) {
-                              final file = result?.files.first;
-                              if (file == null) return;
-                              _addPlugin(file).then((accepted) {
-                                if (accepted == PluginState.enabled) {
-                                  _loadPlugins();
-                                } else if (accepted ==
-                                    PluginState.missingManifest) {
-                                  ScaffoldMessenger.of(context)
-                                      .showSnackBar(const SnackBar(
-                                    content: Text(
-                                        'Cannot load plugin - invalid manifest'),
-                                  ));
-                                }
-                              });
-                            });
-                          },
+                          onPressed: () => _pickPlugin(context),
                           icon: const Icon(Icons.add))
                     ],
                   ),
@@ -159,12 +183,37 @@ class _PluginsState extends State<Plugins> {
       ),
     );
   }
+
+  void _pickPlugin(BuildContext context) async {
+    requestFilePermissions();
+    await FilePicker.platform.clearTemporaryFiles().catchError((e) {});
+
+    final result = await FilePicker.platform.pickFiles(
+        withData: true,
+        allowedExtensions: ["zip", "tar", "gz"],
+        type: FileType.custom);
+
+    final file = result?.files.first;
+    if (file == null) return;
+    final accepted = await _addPlugin(file);
+
+    if (accepted == PluginState.enabled) {
+      _loadPlugins();
+    } else if (accepted == PluginState.missingManifest) {
+      if (mounted) {
+        // Because this is async, the widget might be disposed
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Cannot load plugin - invalid manifest'),
+        ));
+      }
+    }
+  }
 }
 
 class AskPlugin extends StatelessWidget {
-  final Manifest manifest;
+  final PluginInfo plugin;
 
-  const AskPlugin(this.manifest, {super.key});
+  const AskPlugin(this.plugin, {super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -174,9 +223,9 @@ class AskPlugin extends StatelessWidget {
           padding: const EdgeInsets.all(16.0),
           child: Column(
             children: [
-              (AboutPlugin(manifest)),
+              AboutPlugin(plugin),
               const Spacer(),
-              (DiscardAddPlugin(manifest)),
+              DiscardAddPlugin(plugin.manifest),
             ],
           ),
         ),
@@ -186,9 +235,9 @@ class AskPlugin extends StatelessWidget {
 }
 
 class AboutPlugin extends StatelessWidget {
-  final Manifest manifest;
+  final PluginInfo plugin;
   const AboutPlugin(
-    this.manifest, {
+    this.plugin, {
     Key? key,
   }) : super(key: key);
 
@@ -198,17 +247,27 @@ class AboutPlugin extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("${manifest.name} - ${manifest.version}",
+          Text("${plugin.manifest.name} - ${plugin.manifest.version}",
               style: Theme.of(context).textTheme.headline5),
-          Text(manifest.description),
-          Text("Created by ${manifest.author} - ${manifest.license}"),
+          Text(plugin.manifest.description),
+          Text(
+              "Created by ${plugin.manifest.author} - ${plugin.manifest.license}"),
           const SizedBox(height: 20),
           Text("Permissions", style: Theme.of(context).textTheme.headline5),
           Column(
-            children: manifest.permissions
+            children: plugin.manifest.permissions
                 .map((e) => Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8.0),
                       child: Permission(e),
+                    ))
+                .toList(),
+          ),
+          Text("Hooks", style: Theme.of(context).textTheme.headline5),
+          Column(
+            children: plugin.hooks
+                .map((e) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: Hook(e, plugin),
                     ))
                 .toList(),
           ),
@@ -314,11 +373,11 @@ class Plugin extends StatelessWidget {
               ),
               body: SafeArea(
                 child: Padding(
-                    padding: EdgeInsets.all(16.0),
+                    padding: const EdgeInsets.all(16.0),
                     child: Column(
                       children: [
-                        AboutPlugin(plugin.manifest),
-                        Spacer(),
+                        AboutPlugin(plugin),
+                        const Spacer(),
                         ElevatedButton.icon(
                           onPressed: () {
                             plugin.delete();
@@ -345,7 +404,7 @@ class Plugin extends StatelessWidget {
               Tooltip(
                 message: hasUnknownPermissions
                     ? "This plugin has unknown permissions. Update your app or contact the plugin author."
-                    : null,
+                    : "",
                 child: Icon(hasUnknownPermissions
                     ? Icons.error_outline
                     : Icons.extension),
