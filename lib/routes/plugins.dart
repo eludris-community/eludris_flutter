@@ -2,8 +2,11 @@ import 'package:eludris/common.dart';
 import 'package:eludris/lua/manager.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
 // ignore: depend_on_referenced_packages
 import 'package:path/path.dart' as path;
+
+final getIt = GetIt.instance;
 
 const Map<String, String> permissionsExplained = {
   "READ_MESSAGES": "This plugin can read ALL messages",
@@ -93,30 +96,29 @@ class Plugins extends StatefulWidget {
 enum PluginState { enabled, disabled, missingManifest }
 
 class _PluginsState extends State<Plugins> {
-  final manager = PluginManager();
-
   Future<void> _loadPlugins() async {
-    await manager.loadPlugins();
+    await getIt<PluginManager>().loadPlugins();
     setState(() {});
   }
 
   Future<PluginState> _addPlugin(PlatformFile file) async {
-    await manager.addPlugin(path.basenameWithoutExtension(file.name), file);
-    final dir =
-        await manager.getPluginDir(path.basenameWithoutExtension(file.name));
-    final manifest = await manager.getManifest(dir.path);
+    await getIt<PluginManager>()
+        .addPlugin(path.basenameWithoutExtension(file.name), file);
+    final dir = await getIt<PluginManager>()
+        .getPluginDir(path.basenameWithoutExtension(file.name));
+    final manifest = await getIt<PluginManager>().getManifest(dir.path);
 
     if (manifest == null) {
       return PluginState.missingManifest;
     }
-    final plugin = PluginInfo(dir, manager);
+    final plugin = PluginInfo(dir, getIt<PluginManager>());
 
     bool accepted = await _askAcceptPlugin(plugin) ?? false;
     if (!accepted) {
       plugin.delete();
       return PluginState.disabled;
     } else {
-      await manager.loadPlugins();
+      await getIt<PluginManager>().loadPlugins();
     }
 
     return PluginState.enabled;
@@ -172,7 +174,8 @@ class _PluginsState extends State<Plugins> {
               ),
               Expanded(
                 child: ListView(
-                  children: manager.plugins
+                  children: getIt<PluginManager>()
+                      .plugins
                       .map((p) => Plugin(p, _loadPlugins))
                       .toList(),
                 ),
