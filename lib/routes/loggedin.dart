@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:eludris/common.dart';
+import 'package:eludris/lua/manager.dart';
 import 'package:eludris/models/gateway/message.dart';
 import 'package:eludris/widgets/message.dart';
 import 'package:file_picker/file_picker.dart';
@@ -50,6 +52,7 @@ class LoggedIn extends StatefulWidget {
 }
 
 class _LoggedInState extends State<LoggedIn> {
+  final pluginManager = PluginManager();
   final _messages = <MessageData>[];
   StreamSubscription? _stream;
 
@@ -74,14 +77,24 @@ class _LoggedInState extends State<LoggedIn> {
   _sendMessage() async {
     final String text = _textController.text;
     _textController.clear();
+
+    final message = MessageData(widget.name, text, true);
+    for (final plugin in pluginManager.plugins) {
+      final messages =
+          plugin.runPreSendMessage(http: httpUrl, message: message);
+      setState(() {
+        _messages.addAll(messages);
+      });
+    }
+
     setState(() {
-      _messages.add(MessageData(widget.name, text, true));
+      _messages.add(message);
     });
     await post(
       Uri.parse('$httpUrl/messages'),
       body: jsonEncode({
-        'author': widget.name,
-        'content': text,
+        'author': message.author,
+        'content': message.content,
       }),
       headers: {
         'Content-Type': 'application/json',
@@ -97,22 +110,39 @@ class _LoggedInState extends State<LoggedIn> {
 
     final ws = await WebSocket.connect(gatewayUrl);
     ws.pingInterval = const Duration(seconds: 10);
-    _stream = ws.listen((event) {
-      final message = MessageData.fromJson(event);
-      setState(() {
-        final result = _messages.cast<MessageData?>().firstWhere(
-            (element) =>
-                element?.optimistic == true &&
-                element?.content == message.content &&
-                element?.author == message.author,
-            orElse: () => null);
-        if (result != null) {
-          result.optimistic = false;
-        } else {
-          _messages.add(message);
-        }
-      });
+    pluginManager.loadPlugins();
+
+    _stream = ws.listen(_wsListen);
+  }
+
+  void _wsListen(event) {
+    final message = MessageData.fromJson(event);
+
+    final result = _messages.cast<MessageData?>().firstWhere(
+        (element) =>
+            element?.optimistic == true &&
+            element?.content == message.content &&
+            element?.author == message.author,
+        orElse: () => null);
+
+    setState(() {
+      if (result != null) {
+        result.optimistic = false;
+      } else {
+        _messages.add(message);
+      }
     });
+
+    for (final plugin in pluginManager.plugins) {
+      if (plugin.hooks.contains('postGotMessage') &&
+          plugin.manifest.permissions.contains('READ_MESSAGES')) {
+        final pMessages =
+            plugin.runPostGotMessage(http: httpUrl, message: message);
+        setState(() {
+          _messages.addAll(pMessages);
+        });
+      }
+    }
   }
 
   @override
@@ -170,6 +200,7 @@ class _LoggedInState extends State<LoggedIn> {
                   children: [
                     IconButton(
                         onPressed: () async {
+                          requestFilePermissions();
                           final files = await FilePicker.platform.pickFiles();
                           if (files != null) {
                             setState(() {

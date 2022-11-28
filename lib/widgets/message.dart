@@ -18,35 +18,50 @@ class Message extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(left: 10.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: ([
-          displayAuthor
-              ? Padding(
-                  padding: const EdgeInsets.only(top: 10, bottom: 4),
-                  child: Text(
-                    message.author,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                    ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: ([
+                displayAuthor
+                    ? Padding(
+                        padding: const EdgeInsets.only(top: 10, bottom: 4),
+                        child: Text(
+                          message.author,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      )
+                    : Container(),
+                Theme(
+                  data: Theme.of(context).copyWith(
+                    textTheme: Theme.of(context).textTheme.apply(
+                          bodyColor: message.optimistic ? Colors.grey : null,
+                        ),
                   ),
-                )
-              : Container(),
-          Theme(
-            data: Theme.of(context).copyWith(
-              textTheme: Theme.of(context).textTheme.apply(
-                    bodyColor: message.optimistic ? Colors.grey : null,
-                  ),
+                  child: MarkdownBody(
+                      data: message.content,
+                      extensionSet: markdown.ExtensionSet(
+                          markdown.ExtensionSet.gitHubFlavored.blockSyntaxes, [
+                        ...markdown.ExtensionSet.gitHubFlavored.inlineSyntaxes,
+                        markdown.EmojiSyntax()
+                      ])),
+                ),
+              ]),
             ),
-            child: MarkdownBody(
-                data: message.content,
-                extensionSet: markdown.ExtensionSet(
-                    markdown.ExtensionSet.gitHubFlavored.blockSyntaxes, [
-                  ...markdown.ExtensionSet.gitHubFlavored.inlineSyntaxes,
-                  markdown.EmojiSyntax()
-                ])),
           ),
-        ]),
+          if (message.plugin != null)
+            Padding(
+              padding: const EdgeInsets.only(left: 8.0),
+              child: Tooltip(
+                message: "This message was created by ${message.plugin}",
+                child: const Icon(Icons.extension),
+              ),
+            )
+        ],
       ),
     );
   }
