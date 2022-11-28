@@ -61,9 +61,9 @@ class _LoggedInState extends State<LoggedIn> {
   final _scrollController = ScrollController();
 
   bool textEnabled = true;
-  String effisUrl = 'https://eludris.tooty.xyz';
+  String effisUrl = 'https://effis.tooty.xyz';
   String httpUrl = "https://eludris.tooty.xyz";
-  String gatewayUrl = "wss://eludris.tooty.xyz/ws";
+  String gatewayUrl = "wss://eludris.tooty.xyz/ws/";
 
   @override
   void dispose() {
@@ -186,7 +186,11 @@ class _LoggedInState extends State<LoggedIn> {
                   controller: _scrollController,
                   itemBuilder: (context, index) {
                     final message = _messages[index];
-                    return Message(message: message);
+                    return Message(
+                      message: message,
+                      displayAuthor: index != 0 &&
+                          _messages[index - 1].author != message.author,
+                    );
                   },
                 ),
               ),
@@ -211,14 +215,15 @@ class _LoggedInState extends State<LoggedIn> {
                                 'file', file.path));
 
                             final result = await request.send();
-                            final data = await jsonDecode(
-                                await result.stream.bytesToString());
+                            final data = await result.stream.bytesToString();
+                            final match =
+                                RegExp(r"\d+").firstMatch(data)!.group(0);
 
                             final uri = Uri.parse(effisUrl);
                             _textController.text += Uri(
                               host: uri.host,
                               scheme: uri.scheme,
-                              path: data["id"].toString(),
+                              path: match!,
                             ).toString();
 
                             setState(() {

@@ -23,7 +23,15 @@ jobs:
         with:
           flutter-version: '3.0.5'
 
+      - name: Cache Flutter Dependencies
+        id: cache-flutter-dependencies
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.PUB_CACHE }}
+          key: ${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}-pub-cache
+
       - name: Install Packages
+        if: steps.cache-flutter-dependencies.outputs.cache-hit != 'true'
         run: flutter pub get
 
       - name: Run flutter format
