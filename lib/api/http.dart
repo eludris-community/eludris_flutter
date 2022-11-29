@@ -1,22 +1,18 @@
 import 'dart:convert';
-import 'dart:io';
+import 'package:http/http.dart';
 
 import 'package:eludris/api/message.dart';
 
 class HTTP {
   late final String baseUrl;
-  late final HttpClient _client;
 
-  HTTP({required this.baseUrl}) {
-    _client = HttpClient();
-  }
+  HTTP({required this.baseUrl});
 
   Future<Message> createMessage(String author, String content) async {
-    final request = await _client.postUrl(Uri.parse('$baseUrl/messages'));
-    request.headers.contentType = ContentType.json;
-    request.write('{"author": "$author", "content": "$content"}');
+    final request = Request('POST', Uri.parse('$baseUrl/messages'));
+    request.body = jsonEncode({'author': author, 'content': content});
 
-    final response = await request.close();
-    return Message.fromJson(await response.transform(utf8.decoder).join());
+    final response = await request.send();
+    return Message.fromJson(await response.stream.bytesToString());
   }
 }
