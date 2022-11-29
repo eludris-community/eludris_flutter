@@ -1,5 +1,6 @@
 import 'package:eludris/common.dart';
-import 'package:eludris/lua/manager.dart';
+import 'package:eludris/lua/manager.dart'
+    if (dart.library.html) 'package:eludris/lua/web.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';

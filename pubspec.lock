@@ -177,6 +177,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.6.4"
+  json_annotation:
+    dependency: transitive
+    description:
+      name: json_annotation
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "4.7.0"
   lints:
     dependency: transitive
     description:
@@ -476,6 +483,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.2.0"
+  websocket_universal:
+    dependency: "direct main"
+    description:
+      name: websocket_universal
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.3.6"
   win32:
     dependency: transitive
     description:

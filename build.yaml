@@ -1,0 +1,5 @@
+targets:
+  web:
+    sources:
+      exclude:
+        - lib/lua/*
