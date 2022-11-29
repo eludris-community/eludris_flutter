@@ -10,8 +10,7 @@ import 'package:eludris/models/gateway/message.dart';
 import 'package:eludris/widgets/message.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:get_it/get_it.dart';
-import 'package:http/http.dart'
-    show post, MultipartRequest, MultipartFile, Request;
+import 'package:http/http.dart' show MultipartRequest, MultipartFile, Request;
 import 'package:flutter/material.dart';
 import 'package:yaru/yaru.dart';
 
@@ -97,7 +96,6 @@ class _LoggedInState extends State<LoggedIn> {
   }
 
   _initState() async {
-    final config = getIt<APIConfig>();
     const connectionOptions = SocketConnectionOptions(
       pingIntervalMs: 10000,
     );
@@ -215,7 +213,7 @@ class _LoggedInState extends State<LoggedIn> {
                             final request = MultipartRequest("POST",
                                 Uri.parse("${_config.effisUrl}/upload"));
                             request.fields['name'] = file.name;
-                            request.files.add(await MultipartFile.fromBytes(
+                            request.files.add(MultipartFile.fromBytes(
                               'file',
                               file.bytes!,
                               filename: file.name,
