@@ -17,19 +17,6 @@ Future<void> requestFilePermissions() async {
   }
 }
 
-class DefaultYaru extends StatelessWidget {
-  final Widget child;
-  const DefaultYaru(this.child, {super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return YaruTheme(
-      data: const YaruThemeData(variant: YaruVariant.purple),
-      child: child,
-    );
-  }
-}
-
 class APIConfig {
   get httpUrl =>
       getIt<SharedPreferences>().getString('http-url') ?? defaultHttpUrl;
@@ -42,3 +29,12 @@ class APIConfig {
   static const defaultWsUrl = 'wss://eludris.tooty.xyz/ws/';
   static const defaultEffisUrl = 'https://effis.tooty.xyz';
 }
+
+extension CustomTheme on ThemeData {
+  ThemeData withCustom() {
+    return copyWith(useMaterial3: true, visualDensity: VisualDensity.standard);
+  }
+}
+
+final themeDark = yaruPurpleDark.withCustom();
+final themeLight = yaruPurpleLight.withCustom();

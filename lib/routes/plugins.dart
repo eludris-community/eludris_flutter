@@ -128,9 +128,7 @@ class _PluginsState extends State<Plugins> {
   Future<bool?> _askAcceptPlugin(PluginInfo plugin) async {
     final accepted = await Navigator.of(context).push<bool?>(MaterialPageRoute(
       builder: (context) {
-        return DefaultYaru(
-          AskPlugin(plugin),
-        );
+        return AskPlugin(plugin);
       },
     ));
     return accepted;
@@ -190,7 +188,7 @@ class _PluginsState extends State<Plugins> {
 
   void _pickPlugin(BuildContext context) async {
     requestFilePermissions();
-    await FilePicker.platform.clearTemporaryFiles().catchError((e) {});
+    await FilePicker.platform.clearTemporaryFiles().catchError((e) => null);
 
     final result = await FilePicker.platform.pickFiles(
         withData: true,
@@ -252,12 +250,12 @@ class AboutPlugin extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text("${plugin.manifest.name} - ${plugin.manifest.version}",
-              style: Theme.of(context).textTheme.headline5),
+              style: Theme.of(context).textTheme.headlineSmall),
           Text(plugin.manifest.description),
           Text(
               "Created by ${plugin.manifest.author} - ${plugin.manifest.license}"),
           const SizedBox(height: 20),
-          Text("Permissions", style: Theme.of(context).textTheme.headline5),
+          Text("Permissions", style: Theme.of(context).textTheme.headlineSmall),
           Column(
             children: plugin.manifest.permissions
                 .map((e) => Padding(
@@ -266,7 +264,7 @@ class AboutPlugin extends StatelessWidget {
                     ))
                 .toList(),
           ),
-          Text("Hooks", style: Theme.of(context).textTheme.headline5),
+          Text("Hooks", style: Theme.of(context).textTheme.headlineSmall),
           Column(
             children: plugin.hooks
                 .map((e) => Padding(
@@ -298,12 +296,11 @@ class _DiscardAddPluginState extends State<DiscardAddPlugin> {
         .isNotEmpty;
     return Column(
       children: [
-        ignoredUnknownPermissions
-            ? const Text(
-                "No support will be provided for this plugin. Use at your own risk.",
-                style: TextStyle(color: Colors.red),
-              )
-            : Container(),
+        if (ignoredUnknownPermissions)
+          const Text(
+            "No support will be provided for this plugin. Use at your own risk.",
+            style: TextStyle(color: Colors.red),
+          ),
         Row(children: [
           Expanded(
               child: ElevatedButton.icon(
@@ -368,7 +365,7 @@ class Plugin extends StatelessWidget {
       child: ListTile(
         onTap: () =>
             Navigator.push(context, MaterialPageRoute(builder: (context) {
-          return DefaultYaru(Scaffold(
+          return Scaffold(
               floatingActionButton: FloatingActionButton(
                 onPressed: () {
                   Navigator.pop(context);
@@ -396,7 +393,7 @@ class Plugin extends StatelessWidget {
                         )
                       ],
                     )),
-              )));
+              ));
         })),
         title: Text(plugin.manifest.name),
         subtitle: Text(plugin.manifest.description),

@@ -12,7 +12,6 @@ import 'package:file_picker/file_picker.dart';
 import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' show MultipartRequest, MultipartFile, Request;
 import 'package:flutter/material.dart';
-import 'package:yaru/yaru.dart';
 
 final getIt = GetIt.instance;
 
@@ -163,105 +162,103 @@ class _LoggedInState extends State<LoggedIn> {
       );
     });
 
-    return YaruTheme(
-      data: const YaruThemeData(variant: YaruVariant.purple),
-      child: Scaffold(
-        body: SafeArea(
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Row(
-                  children: [
-                    ConnectionStatus(name: widget.name),
-                    const Spacer(),
-                    ElevatedButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('Disconnect'),
-                    ),
-                  ],
-                ),
+    return Scaffold(
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Row(
+                children: [
+                  ConnectionStatus(name: widget.name),
+                  const Spacer(),
+                  ElevatedButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Disconnect'),
+                  ),
+                ],
               ),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: _messages.length,
-                  controller: _scrollController,
-                  itemBuilder: (context, index) {
-                    final message = _messages[index];
-                    return Message(
-                      message: message,
-                      displayAuthor: index != 0 &&
-                          _messages[index - 1].author != message.author,
-                    );
-                  },
-                ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                itemCount: _messages.length,
+                controller: _scrollController,
+                itemBuilder: (context, index) {
+                  final message = _messages[index];
+                  var displayAuthor = index == 0 ||
+                      _messages[index - 1].author != message.author;
+                  return Message(
+                    message: message,
+                    displayAuthor: displayAuthor,
+                  );
+                },
               ),
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Row(
-                  children: [
-                    IconButton(
-                        onPressed: () async {
-                          requestFilePermissions();
-                          final files = await FilePicker.platform.pickFiles();
-                          if (files != null) {
-                            setState(() {
-                              _textEnabled = false;
-                            });
-                            final file = files.files.first;
+            ),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Row(
+                children: [
+                  IconButton(
+                      onPressed: () async {
+                        requestFilePermissions();
+                        final files = await FilePicker.platform.pickFiles();
+                        if (files != null) {
+                          setState(() {
+                            _textEnabled = false;
+                          });
+                          final file = files.files.first;
 
-                            final request = MultipartRequest("POST",
-                                Uri.parse("${_config.effisUrl}/upload"));
-                            request.fields['name'] = file.name;
-                            request.files.add(MultipartFile.fromBytes(
-                              'file',
-                              file.bytes!,
-                              filename: file.name,
-                            ));
+                          final request = MultipartRequest(
+                              "POST", Uri.parse("${_config.effisUrl}/upload"));
+                          request.fields['name'] = file.name;
+                          request.files.add(MultipartFile.fromBytes(
+                            'file',
+                            file.bytes!,
+                            filename: file.name,
+                          ));
 
-                            final result = await request.send();
-                            final data = await result.stream.bytesToString();
-                            final match =
-                                RegExp(r"\d+").firstMatch(data)!.group(0);
+                          final result = await request.send();
+                          final data = await result.stream.bytesToString();
+                          final match =
+                              RegExp(r"\d+").firstMatch(data)!.group(0);
 
-                            final uri = Uri.parse(_config.effisUrl);
-                            _textController.text += Uri(
-                              host: uri.host,
-                              scheme: uri.scheme,
-                              path: match!,
-                            ).toString();
+                          final uri = Uri.parse(_config.effisUrl);
+                          _textController.text += Uri(
+                            host: uri.host,
+                            scheme: uri.scheme,
+                            path: match!,
+                          ).toString();
 
-                            setState(() {
-                              _textEnabled = true;
-                            });
+                          setState(() {
+                            _textEnabled = true;
+                          });
 
-                            _focusNode.requestFocus();
-                          }
-                        },
-                        icon: const Icon(Icons.upload)),
-                    Expanded(
-                      child: TextField(
-                        autofocus: true,
-                        controller: _textController,
-                        enabled: _textEnabled,
-                        focusNode: _focusNode,
-                        onSubmitted: (data) {
-                          _sendMessage();
                           _focusNode.requestFocus();
-                        },
-                        decoration:
-                            const InputDecoration(border: OutlineInputBorder()),
-                      ),
+                        }
+                      },
+                      icon: const Icon(Icons.upload)),
+                  Expanded(
+                    child: TextField(
+                      autofocus: true,
+                      controller: _textController,
+                      enabled: _textEnabled,
+                      focusNode: _focusNode,
+                      onSubmitted: (data) {
+                        _sendMessage();
+                        _focusNode.requestFocus();
+                      },
+                      decoration:
+                          const InputDecoration(border: OutlineInputBorder()),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.send),
-                      onPressed: _sendMessage,
-                    ),
-                  ],
-                ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.send),
+                    onPressed: _sendMessage,
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

@@ -25,17 +25,16 @@ class Message extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: ([
-                displayAuthor
-                    ? Padding(
-                        padding: const EdgeInsets.only(top: 10, bottom: 4),
-                        child: Text(
-                          message.author,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      )
-                    : Container(),
+                if (displayAuthor)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 10, bottom: 4),
+                    child: Text(
+                      message.author,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
                 Theme(
                   data: Theme.of(context).copyWith(
                     textTheme: Theme.of(context).textTheme.apply(
@@ -55,7 +54,7 @@ class Message extends StatelessWidget {
           ),
           if (message.plugin != null)
             Padding(
-              padding: const EdgeInsets.only(left: 8.0),
+              padding: const EdgeInsets.only(right: 8.0),
               child: Tooltip(
                 message: "This message was created by ${message.plugin}",
                 child: const Icon(Icons.extension),
