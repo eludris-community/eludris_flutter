@@ -128,9 +128,7 @@ class _PluginsState extends State<Plugins> {
   Future<bool?> _askAcceptPlugin(PluginInfo plugin) async {
     final accepted = await Navigator.of(context).push<bool?>(MaterialPageRoute(
       builder: (context) {
-        return DefaultYaru(
-          AskPlugin(plugin),
-        );
+        return AskPlugin(plugin);
       },
     ));
     return accepted;
@@ -368,7 +366,7 @@ class Plugin extends StatelessWidget {
       child: ListTile(
         onTap: () =>
             Navigator.push(context, MaterialPageRoute(builder: (context) {
-          return DefaultYaru(Scaffold(
+          return Scaffold(
               floatingActionButton: FloatingActionButton(
                 onPressed: () {
                   Navigator.pop(context);
@@ -396,7 +394,7 @@ class Plugin extends StatelessWidget {
                         )
                       ],
                     )),
-              )));
+              ));
         })),
         title: Text(plugin.manifest.name),
         subtitle: Text(plugin.manifest.description),

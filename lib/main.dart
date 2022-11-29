@@ -27,12 +27,11 @@ class App extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
       title: 'Eludris',
-      home: YaruTheme(
-        data: YaruThemeData(variant: YaruVariant.purple),
-        child: HomePage(),
-      ),
+      home: const HomePage(),
+      theme: themeLight,
+      darkTheme: themeDark,
     );
   }
 }
