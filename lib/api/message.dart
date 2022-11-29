@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 class Message {
   late String author;
   late bool optimistic;
