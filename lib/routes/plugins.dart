@@ -296,12 +296,11 @@ class _DiscardAddPluginState extends State<DiscardAddPlugin> {
         .isNotEmpty;
     return Column(
       children: [
-        ignoredUnknownPermissions
-            ? const Text(
-                "No support will be provided for this plugin. Use at your own risk.",
-                style: TextStyle(color: Colors.red),
-              )
-            : Container(),
+        if (ignoredUnknownPermissions)
+          const Text(
+            "No support will be provided for this plugin. Use at your own risk.",
+            style: TextStyle(color: Colors.red),
+          ),
         Row(children: [
           Expanded(
               child: ElevatedButton.icon(
