@@ -54,7 +54,7 @@ class Message extends StatelessWidget {
           ),
           if (message.plugin != null)
             Padding(
-              padding: const EdgeInsets.only(left: 8.0),
+              padding: const EdgeInsets.only(right: 8.0),
               child: Tooltip(
                 message: "This message was created by ${message.plugin}",
                 child: const Icon(Icons.extension),
