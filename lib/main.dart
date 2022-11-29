@@ -14,9 +14,11 @@ Future<void> main() async {
   if (!kIsWeb) {
     getIt.registerSingleton<PluginManager>(PluginManager());
   }
+
   getIt.registerSingleton<APIConfig>(APIConfig());
   getIt.registerSingleton<SharedPreferences>(
       await SharedPreferences.getInstance());
+
   runApp(const App());
 }
 

@@ -1,6 +1,6 @@
 import 'package:eludris/lua/api.dart';
 import 'package:eludris/lua/message.dart';
-import 'package:eludris/models/gateway/message.dart';
+import 'package:eludris/api/message.dart';
 import 'package:lua_dardo/lua.dart';
 
 void pushToLua<T>(LuaState ls, String varName, String className, T object) {
@@ -11,7 +11,7 @@ void pushToLua<T>(LuaState ls, String varName, String className, T object) {
   ls.setGlobal(varName);
 }
 
-LuaState prepareLua([LuaAPI? api, MessageData? message]) {
+LuaState prepareLua([LuaAPI? api, Message? message]) {
   final ls = LuaState.newState();
   ls.openLibs();
 

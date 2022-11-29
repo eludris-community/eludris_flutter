@@ -1,14 +1,12 @@
-import 'dart:convert';
-
+import 'package:eludris/api/http.dart';
 import 'package:eludris/lua/manager.dart';
-import 'package:eludris/models/gateway/message.dart';
+import 'package:eludris/api/message.dart';
 import 'package:lua_dardo/lua.dart';
-import 'package:http/http.dart' show post;
 
 class LuaAPI {
   final API api;
   bool rejected = false;
-  final MessageData? message;
+  final Message? message;
 
   LuaAPI(this.api, {this.message});
 
@@ -64,8 +62,8 @@ class LuaAPI {
 
 class API {
   final PluginInfo plugin;
-  final List<MessageData> messages = [];
-  final String http;
+  final List<Message> messages = [];
+  final HTTP http;
 
   API({required this.http, required this.plugin});
 
@@ -73,17 +71,12 @@ class API {
     if (!plugin.manifest.permissions.contains("SEND_MESSAGES")) {
       throw Exception("Plugin does not have permission to send messages");
     }
-    messages
-        .add(MessageData(author, content, true, plugin: plugin.manifest.name));
+    messages.add(Message(author, content, true, plugin: plugin.manifest.name));
 
-    await post(Uri.parse("$http/messages"),
-        body: jsonEncode({"content": content, "author": author}),
-        headers: {
-          "Content-Type": "application/json",
-        });
+    http.createMessage(author, content);
   }
 
-  void updateMessage(MessageData message, {String? content, String? author}) {
+  void updateMessage(Message message, {String? content, String? author}) {
     if (!plugin.manifest.permissions.contains("MODIFY_MESSAGES")) {
       throw Exception("Plugin does not have permission to modify messages");
     }

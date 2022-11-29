@@ -1,7 +1,7 @@
-import 'package:eludris/models/gateway/message.dart';
+import 'package:eludris/api/message.dart';
 import 'package:lua_dardo/lua.dart';
 
-void pushMessageToLua(LuaState ls, MessageData message) {
+void pushMessageToLua(LuaState ls, Message message) {
   ls.newTable();
 
   // Add content
