@@ -1,16 +1,15 @@
-import 'dart:async';
-import 'dart:convert';
+import 'package:eludris/api/gateway.dart';
+import 'package:eludris/api/http.dart';
 import 'package:flutter/foundation.dart';
-import 'package:websocket_universal/websocket_universal.dart';
 
 import 'package:eludris/common.dart';
 import 'package:eludris/lua/manager.dart'
     if (dart.library.html) 'package:eludris/lua/web.dart';
-import 'package:eludris/models/gateway/message.dart';
+import 'package:eludris/api/message.dart';
 import 'package:eludris/widgets/message.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:get_it/get_it.dart';
-import 'package:http/http.dart' show MultipartRequest, MultipartFile, Request;
+import 'package:http/http.dart' show MultipartRequest, MultipartFile;
 import 'package:flutter/material.dart';
 
 final getIt = GetIt.instance;
@@ -45,25 +44,24 @@ class LoggedIn extends StatefulWidget {
 }
 
 class _LoggedInState extends State<LoggedIn> {
-  final _messages = <MessageData>[];
-  StreamSubscription? _stream;
+  APIConfig get _config => getIt<APIConfig>();
+
+  final _gw = Gateway(url: getIt<APIConfig>().wsUrl);
+  final _http = HTTP(baseUrl: getIt<APIConfig>().httpUrl);
+
+  final _messages = <Message>[];
 
   final _textController = TextEditingController();
-  final FocusNode _focusNode = FocusNode();
+  final _focusNode = FocusNode();
   final _scrollController = ScrollController();
-
-  IWebSocketHandler<String, String>? _textSocketHandler;
   bool _textEnabled = true;
-
-  APIConfig get _config => getIt<APIConfig>();
 
   @override
   void dispose() {
     // Clean up the controller when the widget is disposed.
     _textController.dispose();
     _scrollController.dispose();
-    _textSocketHandler?.close();
-    _stream?.cancel();
+    _gw.dispose();
     super.dispose();
   }
 
@@ -71,14 +69,13 @@ class _LoggedInState extends State<LoggedIn> {
     final String text = _textController.text;
     _textController.clear();
 
-    final message = MessageData(widget.name, text, true);
+    final message = Message(widget.name, text, true);
+
     if (!kIsWeb) {
       for (final plugin in getIt<PluginManager>().plugins) {
         final messages =
             plugin.runPreSendMessage(http: _config.httpUrl, message: message);
-        setState(() {
-          _messages.addAll(messages);
-        });
+        setState(() => _messages.addAll(messages));
       }
     }
 
@@ -86,42 +83,20 @@ class _LoggedInState extends State<LoggedIn> {
       _messages.add(message);
     });
 
-    Request("POST", Uri.parse(_config.httpUrl + '/messages'))
-      ..body = jsonEncode({
-        'author': message.author,
-        'content': message.content,
-      })
-      ..send();
+    await _http.createMessage(widget.name, text);
   }
 
   _initState() async {
-    const connectionOptions = SocketConnectionOptions(
-      pingIntervalMs: 10000,
-    );
-
-    final IMessageProcessor<String, String> textSocketProcessor =
-        SocketSimpleTextProcessor();
-    final textSocketHandler = IWebSocketHandler<String, String>.createClient(
-      _config.wsUrl, // Postman echo ws server
-      textSocketProcessor,
-      connectionOptions: connectionOptions,
-    );
-
-    if (!kIsWeb) {
-      getIt<PluginManager>().loadPlugins();
-    }
-    _stream = textSocketHandler.incomingMessagesStream.listen(_wsListen);
-    await textSocketHandler.connect();
+    await _gw.connect();
+    _gw.onMessageCreate.stream.listen(_wsListen);
   }
 
-  void _wsListen(event) {
-    final message = MessageData.fromJson(event);
-
-    final result = _messages.cast<MessageData?>().firstWhere(
+  void _wsListen(Message message) {
+    final result = _messages.cast<Message?>().firstWhere(
         (element) =>
-            element?.optimistic == true &&
-            element?.content == message.content &&
-            element?.author == message.author,
+            element!.optimistic == true &&
+            element.content == message.content &&
+            element.author == message.author,
         orElse: () => null);
 
     setState(() {
@@ -187,7 +162,7 @@ class _LoggedInState extends State<LoggedIn> {
                   final message = _messages[index];
                   var displayAuthor = index == 0 ||
                       _messages[index - 1].author != message.author;
-                  return Message(
+                  return MessageWidget(
                     message: message,
                     displayAuthor: displayAuthor,
                   );
