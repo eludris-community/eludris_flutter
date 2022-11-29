@@ -1,14 +1,14 @@
-import 'package:eludris/models/gateway/message.dart';
+import 'package:eludris/api/message.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 // ignore: depend_on_referenced_packages
 import 'package:markdown/markdown.dart' as markdown;
 
-class Message extends StatelessWidget {
-  final MessageData message;
+class MessageWidget extends StatelessWidget {
+  final Message message;
   final bool displayAuthor;
 
-  const Message({
+  const MessageWidget({
     Key? key,
     required this.displayAuthor,
     required this.message,

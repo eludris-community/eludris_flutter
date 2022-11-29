@@ -2,9 +2,10 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:archive/archive_io.dart';
+import 'package:eludris/api/http.dart';
 import 'package:eludris/lua/api.dart';
 import 'package:eludris/lua/common.dart';
-import 'package:eludris/models/gateway/message.dart';
+import 'package:eludris/api/message.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -91,8 +92,8 @@ class PluginInfo {
     return manifest.permissions.contains(permission);
   }
 
-  List<MessageData> runPostGotMessage(
-      {required String http, required MessageData message}) {
+  List<Message> runPostGotMessage(
+      {required HTTP http, required Message message}) {
     final api = LuaAPI(API(
       http: http,
       plugin: this,
@@ -107,8 +108,8 @@ class PluginInfo {
     manager.deletePlugin(reload: reload, plugin: this);
   }
 
-  List<MessageData> runPreSendMessage(
-      {required String http, required MessageData message}) {
+  List<Message> runPreSendMessage(
+      {required HTTP http, required Message message}) {
     final api = LuaAPI(
         API(
           http: http,
