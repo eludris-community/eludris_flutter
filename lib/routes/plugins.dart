@@ -188,7 +188,7 @@ class _PluginsState extends State<Plugins> {
 
   void _pickPlugin(BuildContext context) async {
     requestFilePermissions();
-    await FilePicker.platform.clearTemporaryFiles().catchError((e) {});
+    await FilePicker.platform.clearTemporaryFiles().catchError((e) => null);
 
     final result = await FilePicker.platform.pickFiles(
         withData: true,
@@ -250,12 +250,12 @@ class AboutPlugin extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text("${plugin.manifest.name} - ${plugin.manifest.version}",
-              style: Theme.of(context).textTheme.headline5),
+              style: Theme.of(context).textTheme.headlineSmall),
           Text(plugin.manifest.description),
           Text(
               "Created by ${plugin.manifest.author} - ${plugin.manifest.license}"),
           const SizedBox(height: 20),
-          Text("Permissions", style: Theme.of(context).textTheme.headline5),
+          Text("Permissions", style: Theme.of(context).textTheme.headlineSmall),
           Column(
             children: plugin.manifest.permissions
                 .map((e) => Padding(
@@ -264,7 +264,7 @@ class AboutPlugin extends StatelessWidget {
                     ))
                 .toList(),
           ),
-          Text("Hooks", style: Theme.of(context).textTheme.headline5),
+          Text("Hooks", style: Theme.of(context).textTheme.headlineSmall),
           Column(
             children: plugin.hooks
                 .map((e) => Padding(

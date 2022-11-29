@@ -12,7 +12,6 @@ import 'package:file_picker/file_picker.dart';
 import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' show MultipartRequest, MultipartFile, Request;
 import 'package:flutter/material.dart';
-import 'package:yaru/yaru.dart';
 
 final getIt = GetIt.instance;
 
