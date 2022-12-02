@@ -12,7 +12,7 @@ class HTTP {
     final request = Request('POST', Uri.parse('$baseUrl/messages'));
     request.body = jsonEncode({'author': author, 'content': content});
 
-    final response = await request.send();
-    return Message.fromJson(await response.stream.bytesToString());
+    await request.send();
+    return Message(author, content, true);
   }
 }

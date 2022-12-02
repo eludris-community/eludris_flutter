@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 class Message {
   late String author;
   late bool optimistic;
@@ -8,10 +6,9 @@ class Message {
 
   Message(this.author, this.content, this.optimistic, {this.plugin});
 
-  Message.fromJson(String json) {
-    final Map<String, dynamic> map = jsonDecode(json);
-    author = map['author'];
-    content = map['content'];
+  Message.fromMap(Map<String, String> data) {
+    author = data['author']!;
+    content = data['content']!;
     optimistic = false;
     plugin = null;
   }

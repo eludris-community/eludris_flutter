@@ -1,7 +1,13 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:eludris/api/message.dart';
 import 'package:websocket_universal/websocket_universal.dart';
+
+class EludrisProcessor extends SocketSimpleTextProcessor {
+  @override
+  get pingServerMessage => jsonEncode({"op": "PING"});
+}
 
 class Gateway {
   late final String url;
@@ -11,18 +17,21 @@ class Gateway {
   final onMessageCreate = StreamController<Message>.broadcast();
 
   var connectionOptions = const SocketConnectionOptions(
-    pingIntervalMs: 20 * 1000,
+    pingIntervalMs: 45 * 1000,
   );
 
   Gateway({required this.url});
 
   void _handler(String data) {
-    onMessageCreate.add(Message.fromJson(data));
+    final event = jsonDecode(data);
+    if (event["op"] == "MESSAGE_CREATE") {
+      onMessageCreate.add(Message.fromMap(event["d"]));
+    }
   }
 
   Future<void> connect() async {
     final IMessageProcessor<String, String> textSocketProcessor =
-        SocketSimpleTextProcessor();
+        EludrisProcessor();
     _ws = IWebSocketHandler<String, String>.createClient(
       url,
       textSocketProcessor,
