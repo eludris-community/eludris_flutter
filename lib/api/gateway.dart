@@ -25,7 +25,7 @@ class Gateway {
   void _handler(String data) {
     final event = jsonDecode(data);
     if (event["op"] == "MESSAGE_CREATE") {
-      onMessageCreate.add(Message.fromMap(event["d"]));
+      onMessageCreate.add(Message.fromMap(Map.from(event["d"])));
     }
   }
 
