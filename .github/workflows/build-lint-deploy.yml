@@ -116,6 +116,7 @@ jobs:
         run: flutter analyze
 
   deploy-web:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     env:
       CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
     runs-on: ubuntu-latest
@@ -129,6 +130,7 @@ jobs:
           path: ./build/web
 
       - name: Deploy to Cloudflare Pages
+
         if: ${{ env.CF_API_TOKEN != '' }}
         uses: cloudflare/wrangler-action@2.0.0
         with:
