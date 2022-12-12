@@ -62,6 +62,15 @@ jobs:
           distribution: 'zulu'
           java-version: '11'
 
+      - name: Install dependencies
+        if: matrix.command == 'linux' # Only needed for Linux
+        run: |
+          sudo apt-get install \
+              cmake \
+              clang \
+              ninja-build \
+              libgtk-3-dev \
+              liblzma-dev
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
