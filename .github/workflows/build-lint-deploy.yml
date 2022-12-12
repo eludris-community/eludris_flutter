@@ -122,14 +122,6 @@ jobs:
     needs: [build, lint]
 
     steps:
-      - uses: actions/checkout@v2
-      - name: Setup Flutter
-        if: ${{ env.CF_API_TOKEN != '' }}
-        uses: subosito/flutter-action@v2
-        with:
-          cache: true
-          cache-key: "flutter-:os:-:channel:-:version:-:arch:-:hash:"
-
       - name: Download Web Build
         uses: actions/download-artifact@v2
         with:
@@ -137,6 +129,7 @@ jobs:
           path: ./build/web
 
       - name: Deploy to Cloudflare Pages
+        if: ${{ env.CF_API_TOKEN != '' }}
         uses: cloudflare/wrangler-action@2.0.0
         with:
           apiToken: ${{ secrets.CF_API_TOKEN  }}
