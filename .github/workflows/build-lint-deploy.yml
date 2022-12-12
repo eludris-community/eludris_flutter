@@ -121,13 +121,6 @@ jobs:
           cache: true
           cache-key: "flutter-:os:-:channel:-:version:-:arch:-:hash:"
 
-      - name: Load Cache
-
-        uses: actions/cache@v2
-        with:
-          path: ${{ env.PUB_CACHE }}
-          key: ${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}-pub-cache
-
       - name: Download Web Build
         uses: actions/download-artifact@v2
         with:
