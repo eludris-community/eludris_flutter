@@ -11,15 +11,14 @@ import 'package:get_it/get_it.dart';
 final getIt = GetIt.instance;
 
 Future<void> main() async {
+  runApp(const App());
+
   if (!kIsWeb) {
     getIt.registerSingleton<PluginManager>(PluginManager());
   }
-
   getIt.registerSingleton<APIConfig>(APIConfig());
   getIt.registerSingleton<SharedPreferences>(
       await SharedPreferences.getInstance());
-
-  runApp(const App());
 }
 
 class App extends StatelessWidget {
