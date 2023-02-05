@@ -37,7 +37,7 @@ dependencies:
   http: ^0.13.5
   flutter_markdown: ^0.6.13
   yaru: ^0.4.4
-  shared_preferences: ^2.0.15
+  shared_preferences: ^2.0.17
   file_picker: ^5.2.2
   lua_dardo: ^0.0.4
   path_provider: ^2.0.11
