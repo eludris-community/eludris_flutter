@@ -36,7 +36,7 @@ dependencies:
   cupertino_icons: ^1.0.2
   http: ^0.13.5
   flutter_markdown: ^0.6.13
-  yaru: ^0.4.4
+  yaru: ^0.5.2
   shared_preferences: ^2.0.17
   file_picker: ^5.2.2
   lua_dardo: ^0.0.4
