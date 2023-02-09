@@ -44,7 +44,7 @@ dependencies:
   archive: ^3.3.6
   permission_handler: ^10.0.2
   get_it: ^7.2.0
-  websocket_universal: ^0.3.6
+  websocket_universal: ^0.3.7
 
 dev_dependencies:
   flutter_test:
