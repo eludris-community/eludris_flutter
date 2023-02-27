@@ -40,7 +40,7 @@ dependencies:
   shared_preferences: ^2.0.17
   file_picker: ^5.2.5
   lua_dardo: ^0.0.4
-  path_provider: ^2.0.12
+  path_provider: ^2.0.13
   archive: ^3.3.6
   permission_handler: ^10.0.2
   get_it: ^7.2.0
