@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.1](https://github.com/eludris-community/eludris_flutter/compare/v0.1.0...v0.1.1) (2023-03-21)
+
+
+### Bug Fixes
+
+* add get_it singletons after runApp() ([#51](https://github.com/eludris-community/eludris_flutter/issues/51)) ([4ebcb09](https://github.com/eludris-community/eludris_flutter/commit/4ebcb09d4647807633e22869389b4ed8e63d0ea9))
+* use Map.from for gateway data ([#45](https://github.com/eludris-community/eludris_flutter/issues/45)) ([35ee908](https://github.com/eludris-community/eludris_flutter/commit/35ee908ccc21dad9a228dc029a7ae85ffd8fe68d))
+
 ## [0.1.0](https://github.com/eludris-community/eludris_flutter/compare/v1.0.0...v0.1.0) (2022-12-03)
 
 
